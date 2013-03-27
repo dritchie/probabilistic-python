@@ -1,5 +1,6 @@
 import inspect
 import copy
+import random
 
 class _RVDatabaseRecord:
 	"""
@@ -14,7 +15,7 @@ class _RVDatabaseRecord:
 		self.active = True
 
 	def __deepcopy__(self, memo):
-		return _RVDatabaseRecord(self.erp, self.params[:], self.val, self.logprob, self.active)
+		return _RVDatabaseRecord(self.erp, self.params[:], self.val, self.logprob)
 
 class _RandomVariableDatabase:
 	"""
@@ -24,29 +25,43 @@ class _RandomVariableDatabase:
 
 	def __init__(self):
 		self._vars = {}
-		self._logprob = 0
+		self.logprob = 0
 
 	def __deepcopy__(self, memo):
 		newdb = _RandomVariableDatabase()
-		newdb._logprob = self._logprob
+		newdb.logprob = self.logprob
 		newdb._vars = copy.deepcopy(self._vars, memo)
+		return newdb
+
+	def numVars(self):
+		return len(self._vars)
+
+	def chooseVariableRandomly(self):
+		"""
+		Returns a randomly-chosen variable from the trace
+		Technically, returns a (name, record) pair
+		"""
+		name = random.choice(self._vars.keys())
+		return (name, self._vars[name])
 
 	def traceUpdate(self, computation):
 		"""
 		Run computation and update this database accordingly
 		"""
 
-		self._logprob = 0.0
+		self.logprob = 0.0
 
 		# First, mark all random values as 'inactive'; only
 		# those reeached by the computation will become 'active'
-		for record in self.vars._values:
+		for record in self._vars.values():
 			record.active = False
 
-		computation()
+		retval = computation()
 
 		# Clean up any random values that are no longer reachable
-		self._vars = {name:record for name,record in self._vars if record.active == True}
+		self._vars = {name:record for name,record in self._vars.iteritems() if record.active}
+
+		return retval
 
 	def currentName(self, numFrameSkip):
 		"""
@@ -75,8 +90,15 @@ class _RandomVariableDatabase:
 			if record.params != params:
 				record.params = params
 				record.logprob = erp._logprob(params)
-			self._logprob += record.logprob
+			self.logprob += record.logprob
+			record.active = True
 			return record.val
+
+	def getRecord(self, name):
+		"""
+		Simply retrieve the variable record associated with name
+		"""
+		return self._vars.get(name)
 
 	def insert(self, name, erp, params, val):
 		"""
@@ -84,13 +106,13 @@ class _RandomVariableDatabase:
 		"""
 		ll = erp._logprob(val, params)
 		self._vars[name] = _RVDatabaseRecord(erp, params, val, ll)
-		self._logprob += ll
+		self.logprob += ll
 
 	def addFactor(self, num):
 		"""
 		Add a new factor into the log likelihood of the current trace
 		"""
-		self._logprob += num
+		self.logprob += num
 
 """
 Global singleton instance
