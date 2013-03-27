@@ -40,10 +40,8 @@ class _FlipRandomPrimitive(_RandomPrimitive):
 		randval = random.random()
 		return (1 if randval < p else 0)
 
-	def eval(self, binaryval, p):
-		return (p if binaryval == 1 else 1.0-p)
-
 	def _logprob(self, val, params):
-		return self.eval(val, params[0])
+		p = params[0]
+		return (p if val == 1 else 1.0-p)
 
 # TODO: Implement more ERP types!
