@@ -29,13 +29,45 @@ def constrainedOnes():
 	factor(-math.pow(abs(len(seq) - 4), 10))
 	return seq
 
+def sumOfTenFlips():
+	num = 0
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	num += flip(0.5)
+	return num
+
+def tenFlipsDistribForward(iters):
+	hist = Counter()
+	i = 0
+	while i < iters:
+		i += 1
+		hist[sumOfTenFlips()] += 1
+	return hist
+
+def tenFlipsDistribMH(iters):
+	hist = Counter()
+	samps = sample(sumOfTenFlips, iters)
+	for s in samps:
+		hist[s] += 1
+	return hist
+
 if __name__ == "__main__":
 	forwardhist = onesDistribForward(1000)
 	print "Foward hist:"
 	print forwardhist
-	#print "Forward: Average seq length: {0}".format(forwardavglen)
 	mhhist = onesDistribMH(1000)
 	print "MH hist:"
 	print mhhist
-	#mhavglen = sum(map(lambda seq: len(seq), mhsamps)) / float(len(mhsamps))
-	#print "MH: Average seq length: {0}".format(mhavglen)
+	# forwardhist = tenFlipsDistribForward(1000)
+	# print "Foward hist:"
+	# print forwardhist
+	# mhhist = tenFlipsDistribMH(1000)
+	# print "MH hist:"
+	# print mhhist

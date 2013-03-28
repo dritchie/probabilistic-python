@@ -40,8 +40,8 @@ def sample(computation, iters):
 		# Make proposal for a randomly-chosen variable
 		name, var = rvdb.chooseVariableRandomly()
 		propval = var.erp._proposal(var.val, var.params)
-		forwardPropLogProb = var.erp._logProposalProb(var.val, propval, var.params)
-		reversePropLogProb = var.erp._logProposalProb(propval, var.val, var.params)
+		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
+		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
 
 		# Copy the database, make the proposed change, and update the trace
 		currdb = rvdb
@@ -53,7 +53,9 @@ def sample(computation, iters):
 		retval = propdb.traceUpdate(computation)
 
 		# Accept or reject the proposal
-		acceptThresh = propdb.logprob - currdb.logprob + reversePropLogProb - forwardPropLogProb
+		fwdPropLP += propdb.newlogprob - math.log(currdb.numVars())
+		rvsPropLP += propdb.oldlogprob - math.log(propdb.numVars())
+		acceptThresh = propdb.logprob - currdb.logprob + rvsPropLP - fwdPropLP
 		if math.log(random.random()) < acceptThresh:
 			proposalsAccepted += 1
 			currsamp = retval

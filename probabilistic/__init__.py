@@ -9,9 +9,7 @@ flip = erp._FlipRandomPrimitive()
 """
 Factor creation
 """
-import database
-def factor(num):
-	database.getCurrentDatabase().addFactor(num)
+from database import factor
 
 
 """

@@ -26,11 +26,15 @@ class _RandomVariableDatabase:
 	def __init__(self):
 		self._vars = {}
 		self.logprob = 0
+		self.newlogprob = 0		# From newly-added variables
+		self.oldlogprob = 0		# From unreachable variables
 		self.rootframe = None
 
 	def __deepcopy__(self, memo):
 		newdb = _RandomVariableDatabase()
 		newdb.logprob = self.logprob
+		newdb.oldlogprob = self.oldlogprob
+		newdb.newlogprob = self.newlogprob
 		newdb._vars = copy.deepcopy(self._vars, memo)
 		return newdb
 
@@ -51,6 +55,7 @@ class _RandomVariableDatabase:
 		"""
 
 		self.logprob = 0.0
+		self.newlogprob = 0.0
 
 		# First, mark all random values as 'inactive'; only
 		# those reeached by the computation will become 'active'
@@ -67,6 +72,10 @@ class _RandomVariableDatabase:
 		self.rootframe = None
 
 		# Clean up any random values that are no longer reachable
+		self.oldlogprob = 0.0
+		for record in self._vars.values():
+			if not record.active:
+				self.oldlogprob += record.logprob
 		self._vars = {name:record for name,record in self._vars.iteritems() if record.active}
 
 		return retval
@@ -103,11 +112,14 @@ class _RandomVariableDatabase:
 
 		record = self._vars.get(name)
 		if record == None or record.erp != erp:
+			# Create new variable
 			val = erp._sample_impl(params)
 			ll = erp._logprob(val, params)
+			self.newlogprob += ll
 			record = _RVDatabaseRecord(erp, params, val, ll)
 			self._vars[name] = record
 		else:
+			# Reuse existing variable
 			if record.params != params:
 				record.params = params
 				record.logprob = erp._logprob(record.val, params)
