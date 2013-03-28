@@ -1,5 +1,6 @@
 import random
-from database import _rvdb as rvdb
+import database
+import math
 
 class _RandomPrimitive:
 	"""
@@ -12,6 +13,7 @@ class _RandomPrimitive:
 	def _sample(self, params):
 		# Assumes _sample is called from __call__ in
 		# conrete subclasses
+		rvdb = database.getCurrentDatabase()
 		name = rvdb.currentName(numFrameSkip=2)
 		val = rvdb.lookup(name, self, params)
 		if val != None:
@@ -54,7 +56,8 @@ class _FlipRandomPrimitive(_RandomPrimitive):
 
 	def _logprob(self, val, params):
 		p = params[0]
-		return (p if val == 1 else 1.0-p)
+		prob = (p if val == 1 else 1.0-p)
+		return math.log(prob)
 
 
 # TODO: Implement more ERP types!

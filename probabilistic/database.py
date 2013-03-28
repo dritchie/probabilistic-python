@@ -26,10 +26,12 @@ class _RandomVariableDatabase:
 	def __init__(self):
 		self._vars = {}
 		self.logprob = 0
+		self.recording = True
 
 	def __deepcopy__(self, memo):
 		newdb = _RandomVariableDatabase()
 		newdb.logprob = self.logprob
+		newdb.recording = self.recording
 		newdb._vars = copy.deepcopy(self._vars, memo)
 		return newdb
 
@@ -48,6 +50,9 @@ class _RandomVariableDatabase:
 		"""
 		Run computation and update this database accordingly
 		"""
+
+		if not self.recording:
+			return
 
 		self.logprob = 0.0
 
@@ -83,6 +88,10 @@ class _RandomVariableDatabase:
 		Looks up the value of a random variable.
 		If this random variable does not exist, returns None.
 		"""
+
+		if not self.recording:
+			return None
+
 		record = self._vars.get(name)
 		if record == None or record.erp != erp:
 			return None
@@ -104,6 +113,10 @@ class _RandomVariableDatabase:
 		"""
 		Insert a new random variable
 		"""
+
+		if not self.recording:
+			return
+
 		ll = erp._logprob(val, params)
 		self._vars[name] = _RVDatabaseRecord(erp, params, val, ll)
 		self.logprob += ll
@@ -112,9 +125,20 @@ class _RandomVariableDatabase:
 		"""
 		Add a new factor into the log likelihood of the current trace
 		"""
+
+		if not self.recording:
+			return
+
 		self.logprob += num
 
 """
 Global singleton instance
 """
 _rvdb = _RandomVariableDatabase()
+
+def getCurrentDatabase():
+	return _rvdb
+
+def setCurrentDatabase(newdb):
+	global _rvdb
+	_rvdb = newdb
