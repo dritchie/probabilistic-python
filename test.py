@@ -53,20 +53,25 @@ def tenFlipsDistribForward(iters):
 def tenFlipsDistribMH(iters):
 	hist = Counter()
 	samps = sample(sumOfTenFlips, iters)
+	#samps = sample(sumOfTenFlips, iters, lambda n: n >= 5)
 	for s in samps:
 		hist[s] += 1
 	return hist
 
 if __name__ == "__main__":
-	forwardhist = onesDistribForward(1000)
-	print "Foward hist:"
-	print forwardhist
-	mhhist = onesDistribMH(1000)
-	print "MH hist:"
-	print mhhist
+	# forwardhist = onesDistribForward(1000)
+	# print "Foward hist:"
+	# print forwardhist
+	# mhhist = onesDistribMH(1000)
+	# print "MH hist:"
+	# print mhhist
+	#################
 	# forwardhist = tenFlipsDistribForward(1000)
 	# print "Foward hist:"
 	# print forwardhist
 	# mhhist = tenFlipsDistribMH(1000)
 	# print "MH hist:"
 	# print mhhist
+	#################
+	# avglen = sum(map(lambda s: len(s), sample(constrainedOnes, 1000))) / 1000.0
+	# print "Average length: {0}".format(avglen)

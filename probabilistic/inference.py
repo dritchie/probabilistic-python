@@ -4,7 +4,7 @@ import random
 import math
 
 
-def sample(computation, iters):
+def sample(computation, iters, conditioner = (lambda x: True)):
 	"""
 	Sample from a probabilistic computation for some
 	number of iterations.
@@ -13,20 +13,25 @@ def sample(computation, iters):
 	TODO: Implement other inference backends.
 	"""
 
+	# No nested query support
+	assert(database.getCurrentDatabase() == None)
+
 	# Analytics
 	proposalsMade = 0
 	proposalsAccepted = 0
 
 	# Run computation to populate the database
 	# with an initial trace
-	assert(database.getCurrentDatabase() == None)	# No nested query support
-	database.newDatabase()
-	currsamp = database.getCurrentDatabase().traceUpdate(computation)
+	currsamp = None
+	conditionSatisfied = False
+	while not conditionSatisfied:
+		database.newDatabase()
+		currsamp = database.getCurrentDatabase().traceUpdate(computation)
+		conditionSatisfied = conditioner(currsamp)
 
 	# Bail early if the computation is deterministic
 	if database.getCurrentDatabase().numVars() == 0:
 		return [currsamp for i in range(iters)]
-
 
 	# MH inference loop
 	samps = [currsamp]
@@ -56,7 +61,7 @@ def sample(computation, iters):
 		fwdPropLP += propdb.newlogprob - math.log(currdb.numVars())
 		rvsPropLP += propdb.oldlogprob - math.log(propdb.numVars())
 		acceptThresh = propdb.logprob - currdb.logprob + rvsPropLP - fwdPropLP
-		if math.log(random.random()) < acceptThresh:
+		if conditioner(retval) and math.log(random.random()) < acceptThresh:
 			proposalsAccepted += 1
 			currsamp = retval
 		else:
