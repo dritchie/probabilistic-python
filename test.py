@@ -1,5 +1,4 @@
 from probabilistic import *
-import probabilistic.database
 import math
 from collections import Counter
 

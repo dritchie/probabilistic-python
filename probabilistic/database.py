@@ -87,21 +87,15 @@ class _RandomVariableDatabase:
 		Skips the top 'numFrameSkip' stack frames that precede this
 			function's stack frame (numFrameSkip+1 frames total)
 		"""
-		s = inspect.stack()[(numFrameSkip+1):]
-		s.reverse()
-
-		# Skip everything at the bottom up the stack until we get to
-		# the root frame
-		if self.rootframe != None:
-			firsti = 0
-			while s[firsti][0] != self.rootframe:
-				firsti += 1
-			s = s[(firsti+1):]
-
+		f = inspect.currentframe()
+		i = 0
+		while i < numFrameSkip:
+			i += 1
+			f = f.f_back
 		name = ""
-		for tup in s:
-			f = tup[0]
-			name += "{0}:{1}|".format(id(f.f_code), f.f_lineno)
+		while f != None and f != self.rootframe:
+			name = "{0}:{1}|".format(id(f.f_code), f.f_lineno) + name
+			f = f.f_back
 		return name
 
 	def lookup(self, name, erp, params):
