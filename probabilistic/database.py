@@ -118,7 +118,7 @@ class _RandomVariableDatabase:
 		else:
 			if record.params != params:
 				record.params = params
-				record.logprob = erp._logprob(params)
+				record.logprob = erp._logprob(record.val, params)
 		self.logprob += record.logprob
 		record.active = True
 		return record.val

@@ -21,9 +21,13 @@ def sample(computation, iters):
 	# with an initial trace
 	currsamp = database.getCurrentDatabase().traceUpdate(computation)
 
-	samps = [currsamp]
+	# Bail early if the computation is deterministic
+	if database.getCurrentDatabase().numVars() == 0:
+		return [currsamp for i in range(iters)]
+
 
 	# MH inference loop
+	samps = [currsamp]
 	i = 0
 	while i < iters:
 
@@ -49,11 +53,9 @@ def sample(computation, iters):
 		# Accept or reject the proposal
 		acceptThresh = propdb.logprob - currdb.logprob + reversePropLogProb - forwardPropLogProb
 		if math.log(random.random()) < acceptThresh:
-			#print "{0}: accepted".format(len(retval))
 			proposalsAccepted += 1
 			currsamp = retval
 		else:
-			#print "{0}: rejected".format(len(retval))
 			database.setCurrentDatabase(currdb)
 		proposalsMade += 1
 		samps.append(currsamp)
