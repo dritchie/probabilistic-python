@@ -12,11 +12,9 @@ def ones():
 def onesDistribForward(iters):
 	hist = Counter()
 	i = 0
-	database.getCurrentDatabase().recording = False
 	while i < iters:
 		i += 1
 		hist[len(ones())] += 1
-	database.getCurrentDatabase().recording = True
 	return hist
 
 def onesDistribMH(iters):

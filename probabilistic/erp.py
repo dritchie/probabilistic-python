@@ -13,9 +13,7 @@ class _RandomPrimitive:
 	def _sample(self, params):
 		# Assumes _sample is called from __call__ in
 		# conrete subclasses
-		rvdb = database.getCurrentDatabase()
-		name = rvdb.currentName(numFrameSkip=2)
-		return rvdb.lookup(name, self, params)
+		return database.lookupVariableValue(self, params, numFrameSkip=2)
 
 	def _logprob(self, val, params):
 		pass

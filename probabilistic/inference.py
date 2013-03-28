@@ -19,6 +19,8 @@ def sample(computation, iters):
 
 	# Run computation to populate the database
 	# with an initial trace
+	assert(database.getCurrentDatabase() == None)	# No nested query support
+	database.newDatabase()
 	currsamp = database.getCurrentDatabase().traceUpdate(computation)
 
 	# Bail early if the computation is deterministic
@@ -59,6 +61,8 @@ def sample(computation, iters):
 			database.setCurrentDatabase(currdb)
 		proposalsMade += 1
 		samps.append(currsamp)
+
+	database.setCurrentDatabase(None)
 
 	print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)
 	return samps
