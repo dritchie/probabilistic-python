@@ -30,6 +30,7 @@ def constrainedOnes():
 
 def sumOfTenFlips():
 	num = 0
+	# num += flip(0.5, conditionedValue=1)
 	num += flip(0.5)
 	num += flip(0.5)
 	num += flip(0.5)

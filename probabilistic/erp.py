@@ -10,10 +10,10 @@ class _RandomPrimitive:
 	def _sample_impl(self, params):
 		pass
 
-	def _sample(self, params):
+	def _sample(self, params, conditionedValue=None):
 		# Assumes _sample is called from __call__ in
 		# conrete subclasses
-		return database.lookupVariableValue(self, params, numFrameSkip=2)
+		return database.lookupVariableValue(self, params, 2, conditionedValue)
 
 	def _logprob(self, val, params):
 		pass
@@ -38,8 +38,8 @@ class _FlipRandomPrimitive(_RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, p):
-		return self._sample([p])
+	def __call__(self, p, conditionedValue=None):
+		return self._sample([p], conditionedValue)
 
 	def _sample_impl(self, params):
 		p = params[0]

@@ -98,16 +98,21 @@ class _RandomVariableDatabase:
 			f = f.f_back
 		return name
 
-	def lookup(self, name, erp, params):
+	def lookup(self, name, erp, params, conditionedValue=None):
 		"""
 		Looks up the value of a random variable.
 		If this random variable does not exist, create it
 		"""
 
 		record = self._vars.get(name)
-		if record == None or record.erp != erp:
+		if (record == None or record.erp != erp or
+			(conditionedValue != None and conditionedValue != record.val)):
 			# Create new variable
-			val = erp._sample_impl(params)
+			val = None
+			if conditionedValue == None:
+				val = erp._sample_impl(params)
+			else:
+				val = conditionedValue
 			ll = erp._logprob(val, params)
 			self.newlogprob += ll
 			record = _RVDatabaseRecord(erp, params, val, ll)
@@ -139,13 +144,16 @@ Global singleton instance
 """
 _rvdb = None
 
-def lookupVariableValue(erp, params, numFrameSkip):
+def lookupVariableValue(erp, params, numFrameSkip, conditionedValue=None):
 	global _rvdb
 	if _rvdb == None:
-		return erp._sample_impl(params)
+		if conditionedValue == None:
+			return erp._sample_impl(params)
+		else:
+			return conditionedValue
 	else:
 		name = _rvdb.currentName(numFrameSkip+1)
-		return _rvdb.lookup(name, erp, params)
+		return _rvdb.lookup(name, erp, params, conditionedValue)
 
 def newDatabase():
 	global _rvdb
