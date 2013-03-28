@@ -1,17 +1,17 @@
-import erp
-import database
 
 """
 Random variable generators
 """
+import erp
 flip = erp._FlipRandomPrimitive()
 
 
 """
 Factor creation
 """
+import database
 def factor(num):
-	database._rvdb.addFactor(num)
+	database.getCurrentDatabase().addFactor(num)
 
 
 """

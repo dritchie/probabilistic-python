@@ -27,6 +27,7 @@ class _RandomVariableDatabase:
 		self._vars = {}
 		self.logprob = 0
 		self.recording = True
+		self.rootframe = None
 
 	def __deepcopy__(self, memo):
 		newdb = _RandomVariableDatabase()
@@ -61,7 +62,14 @@ class _RandomVariableDatabase:
 		for record in self._vars.values():
 			record.active = False
 
+		# Mark that this is the 'root' of the current execution trace
+		self.rootframe = inspect.currentframe()
+
+		# Run the computation, which will create/lookup random variables
 		retval = computation()
+
+		# CLear out the root frame
+		self.rootframe = None
 
 		# Clean up any random values that are no longer reachable
 		self._vars = {name:record for name,record in self._vars.iteritems() if record.active}
@@ -77,6 +85,15 @@ class _RandomVariableDatabase:
 		"""
 		s = inspect.stack()[(numFrameSkip+1):]
 		s.reverse()
+
+		# Skip everything at the bottom up the stack until we get to
+		# the root frame
+		if self.rootframe != None:
+			firsti = 0
+			while s[firsti][0] != self.rootframe:
+				firsti += 1
+			s = s[(firsti+1):]
+
 		name = ""
 		for tup in s:
 			f = tup[0]
@@ -86,40 +103,31 @@ class _RandomVariableDatabase:
 	def lookup(self, name, erp, params):
 		"""
 		Looks up the value of a random variable.
-		If this random variable does not exist, returns None.
+		If this random variable does not exist, create it
 		"""
 
 		if not self.recording:
-			return None
+			return erp._sample_impl(params)
 
 		record = self._vars.get(name)
 		if record == None or record.erp != erp:
-			return None
+			val = erp._sample_impl(params)
+			ll = erp._logprob(val, params)
+			record = _RVDatabaseRecord(erp, params, val, ll)
+			self._vars[name] = record
 		else:
 			if record.params != params:
 				record.params = params
 				record.logprob = erp._logprob(params)
-			self.logprob += record.logprob
-			record.active = True
-			return record.val
+		self.logprob += record.logprob
+		record.active = True
+		return record.val
 
 	def getRecord(self, name):
 		"""
 		Simply retrieve the variable record associated with name
 		"""
 		return self._vars.get(name)
-
-	def insert(self, name, erp, params, val):
-		"""
-		Insert a new random variable
-		"""
-
-		if not self.recording:
-			return
-
-		ll = erp._logprob(val, params)
-		self._vars[name] = _RVDatabaseRecord(erp, params, val, ll)
-		self.logprob += ll
 
 	def addFactor(self, num):
 		"""

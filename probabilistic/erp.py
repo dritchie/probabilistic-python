@@ -15,13 +15,7 @@ class _RandomPrimitive:
 		# conrete subclasses
 		rvdb = database.getCurrentDatabase()
 		name = rvdb.currentName(numFrameSkip=2)
-		val = rvdb.lookup(name, self, params)
-		if val != None:
-			return val
-		else:
-			val = self._sample_impl(params)
-			rvdb.insert(name, self, params, val)
-			return val
+		return rvdb.lookup(name, self, params)
 
 	def _logprob(self, val, params):
 		pass
@@ -58,6 +52,12 @@ class _FlipRandomPrimitive(_RandomPrimitive):
 		p = params[0]
 		prob = (p if val == 1 else 1.0-p)
 		return math.log(prob)
+
+	def _proposal(self, currval, params):
+		return int(not(currval))
+
+	def _logProposalProb(self, currval, propval, params):
+		return 0.0 		# There's only one way to flip a binary variable
 
 
 # TODO: Implement more ERP types!
