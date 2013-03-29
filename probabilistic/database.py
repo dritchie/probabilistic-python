@@ -1,6 +1,7 @@
 import inspect
 import copy
 import random
+from collections import Counter
 
 class _RVDatabaseRecord:
 	"""
@@ -29,6 +30,7 @@ class _RandomVariableDatabase:
 		self.newlogprob = 0		# From newly-added variables
 		self.oldlogprob = 0		# From unreachable variables
 		self.rootframe = None
+		self.loopcounters = Counter()
 
 	def __deepcopy__(self, memo):
 		newdb = _RandomVariableDatabase()
@@ -56,6 +58,7 @@ class _RandomVariableDatabase:
 
 		self.logprob = 0.0
 		self.newlogprob = 0.0
+		self.loopcounters.clear()
 
 		# First, mark all random values as 'inactive'; only
 		# those reeached by the computation will become 'active'
@@ -68,8 +71,9 @@ class _RandomVariableDatabase:
 		# Run the computation, which will create/lookup random variables
 		retval = computation()
 
-		# CLear out the root frame
+		# CLear out the root frame, etc.
 		self.rootframe = None
+		self.loopcounters.clear()
 
 		# Clean up any random values that are no longer reachable
 		self.oldlogprob = 0.0
@@ -87,6 +91,7 @@ class _RandomVariableDatabase:
 		Skips the top 'numFrameSkip' stack frames that precede this
 			function's stack frame (numFrameSkip+1 frames total)
 		"""
+		numFrameSkip += 1	# Skip this frame, obviously
 		f = inspect.currentframe()
 		i = 0
 		while i < numFrameSkip:
@@ -94,9 +99,22 @@ class _RandomVariableDatabase:
 			f = f.f_back
 		name = ""
 		while f != None and f != self.rootframe:
-			name = "{0}:{1}|".format(id(f.f_code), f.f_lineno) + name
+			name = "{0}:{1}:{2}|".format(id(f.f_code), f.f_lineno, self.loopcounters[id(f)]) + name
 			f = f.f_back
 		return name
+
+	def incrementLoopCounter(self, numFrameSkip):
+		"""
+		Increment the loop counter associated with the frame that is numFrameSkip
+		frames from the top of the stack
+		"""
+		numFrameSkip += 1	# Skip this frame, obviously
+		f = inspect.currentframe()
+		i = 0
+		while i < numFrameSkip:
+			i += 1
+			f = f.f_back
+		self.loopcounters[id(f)] += 1
 
 	def lookup(self, name, erp, params, conditionedValue=None):
 		"""
@@ -154,6 +172,11 @@ def lookupVariableValue(erp, params, numFrameSkip, conditionedValue=None):
 	else:
 		name = _rvdb.currentName(numFrameSkip+1)
 		return _rvdb.lookup(name, erp, params, conditionedValue)
+
+def incrementLoopCounter(numFrameSkip):
+	global _rvdb
+	if _rvdb != None:
+		_rvdb.incrementLoopCounter(numFrameSkip+1)
 
 def newDatabase():
 	global _rvdb
