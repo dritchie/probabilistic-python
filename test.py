@@ -19,13 +19,34 @@ def distribMH(computation, iters, postprocess = (lambda x : x)):
 		hist[postprocess(s)] += 1
 	return hist
 
-def compareForwardToMH(computation, iters, postprocess = (lambda x : x)):
+def compareForwardToMHDists(computation, iters, postprocess = (lambda x : x)):
 	forwardhist = distribForward(computation, iters, postprocess)
 	print "Forward hist:"
 	print forwardhist
 	mhhist = distribMH(computation, iters, postprocess)
 	print "MH hist:"
 	print mhhist
+
+def meanForward(computation, iters, postprocess = (lambda x : x)):
+	mean = 0.0
+	i = 0
+	while i < iters:
+		i += 1
+		mean += postprocess(computation())
+	return mean / iters
+
+def meanMH(computation, iters, postprocess = (lambda x : x)):
+	mean = 0.0
+	samps = sample(computation, iters)
+	for s in samps:
+		mean += postprocess(s)
+	return mean / iters
+
+def compareForwardToMHMeans(computation, iters, postprocess = (lambda x : x)):
+	forwardmean = meanForward(computation, iters, postprocess)
+	print "Forward mean: {0}".format(forwardmean)
+	mhmean = meanMH(computation, iters, postprocess)
+	print "MH mean: {0}".format(mhmean)
 
 ###############################
 
@@ -74,14 +95,34 @@ def sumOfTenFor():
 def sumOfTenMap():
 	return sum(prmap(lambda x: flip(0.5), range(10)))
 
+def oneGaussian():
+	return gaussian(10, 0.5)
+
+def oneGamma():
+	return gamma(9, 0.5)
+
+def oneBeta():
+	return beta(2, 2)
+
+def oneBinomial():
+	return binomial(0.5, 40)
+
+def onePoisson():
+	return poisson(10)
+
 ###############################
 
 if __name__ == "__main__":
-	# compareForwardToMH(ones, 1000, len)
-	# compareForwardToMH(sumOfTen, 1000)
-	# compareForwardToMH(sumOfTenWhile, 1000)
-	# compareForwardToMH(sumOfTenFor, 1000)
-	compareForwardToMH(sumOfTenMap, 1000)
+	# compareForwardToMHDists(ones, 1000, len)
+	# compareForwardToMHDists(sumOfTen, 1000)
+	# compareForwardToMHDists(sumOfTenWhile, 1000)
+	# compareForwardToMHDists(sumOfTenFor, 1000)
+	# compareForwardToMHDists(sumOfTenMap, 1000)
+	# compareForwardToMHMeans(oneGaussian, 10000)
+	# compareForwardToMHMeans(oneGamma, 10000)
+	# compareForwardToMHMeans(oneBeta, 10000)
+	# compareForwardToMHMeans(oneBinomial, 10000)
+	compareForwardToMHMeans(onePoisson, 10000)
 	#################
 	# avglen = sum(map(lambda s: len(s), sample(constrainedOnes, 1000))) / 1000.0
 	# print "Average length: {0}".format(avglen)

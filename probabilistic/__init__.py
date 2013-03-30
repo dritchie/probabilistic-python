@@ -3,7 +3,15 @@
 Random variable generators
 """
 import erp
-flip = erp._FlipRandomPrimitive()
+flip = erp.FlipRandomPrimitive()
+gaussian = erp.GaussianRandomPrimitive()
+gamma = erp.GammaRandomPrimitive()
+beta = erp.BetaRandomPrimitive()
+binomial = erp.BinomialRandomPrimitive()
+poisson = erp.PoissonRandomPrimitive()
+dirichlet = erp.DirichletRandomPrimitive()
+multinomial = erp.MultinomialRandomPrimitive()
+uniform = erp.UniformRandomPrimitive()
 
 
 """
