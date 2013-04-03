@@ -31,6 +31,7 @@ class _RandomVariableDatabase:
 		self.oldlogprob = 0		# From unreachable variables
 		self.rootframe = None
 		self.loopcounters = Counter()
+		self.conditionsSatisfied = True
 
 	def __deepcopy__(self, memo):
 		newdb = _RandomVariableDatabase()
@@ -38,6 +39,7 @@ class _RandomVariableDatabase:
 		newdb.oldlogprob = self.oldlogprob
 		newdb.newlogprob = self.newlogprob
 		newdb._vars = copy.deepcopy(self._vars, memo)
+		newdb.conditionsSatisfied = self.conditionsSatisfied
 		return newdb
 
 	def numVars(self):
@@ -59,6 +61,7 @@ class _RandomVariableDatabase:
 		self.logprob = 0.0
 		self.newlogprob = 0.0
 		self.loopcounters.clear()
+		self.conditionsSatisfied = True
 
 		# First, mark all random values as 'inactive'; only
 		# those reeached by the computation will become 'active'
@@ -154,8 +157,13 @@ class _RandomVariableDatabase:
 		"""
 		Add a new factor into the log likelihood of the current trace
 		"""
-
 		self.logprob += num
+
+	def conditionOn(self, boolexpr):
+		"""
+		Condition the trace on the value of a boolean expression
+		"""
+		self.conditionsSatisfied = self.conditionsSatisfied and boolexpr
 
 """
 Global singleton instance
@@ -193,3 +201,8 @@ def factor(num):
 	global _rvdb
 	if _rvdb != None:
 		_rvdb.addFactor(num)
+
+def condition(boolexpr):
+	global _rvdb
+	if _rvdb != None:
+		_rvdb.conditionOn(boolexpr)

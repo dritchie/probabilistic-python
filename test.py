@@ -76,6 +76,11 @@ def sumOfTen():
 	num += flip(0.5)
 	return num
 
+def constrainedSumOfTen():
+	num = sumOfTen()
+	condition(num >= 5)
+	return num
+
 def sumOfTenWhile():
 	num = [0]
 	i = [0]
@@ -113,6 +118,7 @@ def onePoisson():
 ###############################
 
 if __name__ == "__main__":
+
 	# compareForwardToMHDists(ones, 1000, len)
 	# compareForwardToMHDists(sumOfTen, 1000)
 	# compareForwardToMHDists(sumOfTenWhile, 1000)
@@ -122,7 +128,9 @@ if __name__ == "__main__":
 	# compareForwardToMHMeans(oneGamma, 10000)
 	# compareForwardToMHMeans(oneBeta, 10000)
 	# compareForwardToMHMeans(oneBinomial, 10000)
-	compareForwardToMHMeans(onePoisson, 10000)
-	#################
-	# avglen = sum(map(lambda s: len(s), sample(constrainedOnes, 1000))) / 1000.0
-	# print "Average length: {0}".format(avglen)
+	# compareForwardToMHMeans(onePoisson, 10000)
+
+	# print "Average length: {0}".format(meanMH(constrainedOnes, 1000, lambda x: len(x)))
+
+	# print "Average num 1s: {0}".format(meanMH(constrainedSumOfTen, 1000))
+

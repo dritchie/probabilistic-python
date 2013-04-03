@@ -4,7 +4,7 @@ import random
 import math
 
 
-def sample(computation, iters, conditioner = (lambda x: True)):
+def sample(computation, iters):
 	"""
 	Sample from a probabilistic computation for some
 	number of iterations.
@@ -23,11 +23,11 @@ def sample(computation, iters, conditioner = (lambda x: True)):
 	# Run computation to populate the database
 	# with an initial trace
 	currsamp = None
-	conditionSatisfied = False
-	while not conditionSatisfied:
+	conditionsSatisfied = False
+	while not conditionsSatisfied:
 		database.newDatabase()
 		currsamp = database.getCurrentDatabase().traceUpdate(computation)
-		conditionSatisfied = conditioner(currsamp)
+		conditionsSatisfied = database.getCurrentDatabase().conditionsSatisfied
 
 	# Bail early if the computation is deterministic
 	if database.getCurrentDatabase().numVars() == 0:
@@ -61,7 +61,7 @@ def sample(computation, iters, conditioner = (lambda x: True)):
 		fwdPropLP += propdb.newlogprob - math.log(currdb.numVars())
 		rvsPropLP += propdb.oldlogprob - math.log(propdb.numVars())
 		acceptThresh = propdb.logprob - currdb.logprob + rvsPropLP - fwdPropLP
-		if conditioner(retval) and math.log(random.random()) < acceptThresh:
+		if propdb.conditionsSatisfied and math.log(random.random()) < acceptThresh:
 			proposalsAccepted += 1
 			currsamp = retval
 		else:

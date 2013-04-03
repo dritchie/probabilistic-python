@@ -15,9 +15,10 @@ uniform = erp.UniformRandomPrimitive()
 
 
 """
-Factor creation
+Soft and hard constraints
 """
 from database import factor
+from database import condition
 
 
 """
