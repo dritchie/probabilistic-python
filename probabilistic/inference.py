@@ -1,4 +1,4 @@
-import database
+import trace
 import copy
 import random
 import math
@@ -14,7 +14,7 @@ def sample(computation, iters):
 	"""
 
 	# No nested query support
-	assert(database.getCurrentDatabase() == None)
+	assert(trace.getCurrentTrace() == None)
 
 	# Analytics
 	proposalsMade = 0
@@ -25,12 +25,12 @@ def sample(computation, iters):
 	currsamp = None
 	conditionsSatisfied = False
 	while not conditionsSatisfied:
-		database.newDatabase()
-		currsamp = database.getCurrentDatabase().traceUpdate(computation)
-		conditionsSatisfied = database.getCurrentDatabase().conditionsSatisfied
+		trace.newTrace()
+		currsamp = trace.getCurrentTrace().traceUpdate(computation)
+		conditionsSatisfied = trace.getCurrentTrace().conditionsSatisfied
 
 	# Bail early if the computation is deterministic
-	if database.getCurrentDatabase().numVars() == 0:
+	if trace.getCurrentTrace().numVars() == 0:
 		return [currsamp for i in range(iters)]
 
 	# MH inference loop
@@ -40,36 +40,36 @@ def sample(computation, iters):
 
 		i += 1
 
-		rvdb = database.getCurrentDatabase()
+		tr = trace.getCurrentTrace()
 
 		# Make proposal for a randomly-chosen variable
-		name, var = rvdb.chooseVariableRandomly()
+		name, var = tr.chooseVariableRandomly()
 		propval = var.erp._proposal(var.val, var.params)
 		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
 		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
 
 		# Copy the database, make the proposed change, and update the trace
-		currdb = rvdb
-		propdb = copy.deepcopy(rvdb)
-		database.setCurrentDatabase(propdb)
-		vrec = propdb.getRecord(name)
+		currtrace = tr
+		proptrace = copy.deepcopy(tr)
+		trace.setCurrentTrace(proptrace)
+		vrec = proptrace.getRecord(name)
 		vrec.val = propval
 		vrec.logprob = vrec.erp._logprob(vrec.val, vrec.params)
-		retval = propdb.traceUpdate(computation)
+		retval = proptrace.traceUpdate(computation)
 
 		# Accept or reject the proposal
-		fwdPropLP += propdb.newlogprob - math.log(currdb.numVars())
-		rvsPropLP += propdb.oldlogprob - math.log(propdb.numVars())
-		acceptThresh = propdb.logprob - currdb.logprob + rvsPropLP - fwdPropLP
-		if propdb.conditionsSatisfied and math.log(random.random()) < acceptThresh:
+		fwdPropLP += proptrace.newlogprob - math.log(currtrace.numVars())
+		rvsPropLP += proptrace.oldlogprob - math.log(proptrace.numVars())
+		acceptThresh = proptrace.logprob - currtrace.logprob + rvsPropLP - fwdPropLP
+		if proptrace.conditionsSatisfied and math.log(random.random()) < acceptThresh:
 			proposalsAccepted += 1
 			currsamp = retval
 		else:
-			database.setCurrentDatabase(currdb)
+			trace.setCurrentTrace(currtrace)
 		proposalsMade += 1
 		samps.append(currsamp)
 
-	database.setCurrentDatabase(None)
+	trace.setCurrentTrace(None)
 
 	print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)
 	return samps

@@ -173,5 +173,5 @@ if __name__ == "__main__":
 
 	# print memTest()
 
-	print distribMH(sprinklerTest, 5000)
+	print distribMH(sprinklerTest, 10000)
 

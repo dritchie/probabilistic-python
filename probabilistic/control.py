@@ -1,4 +1,4 @@
-import database
+import trace
 
 def prfor(iterable, block):
 	"""
@@ -6,7 +6,7 @@ def prfor(iterable, block):
 	Invokes block for every element in iterable.
 	"""
 	for elem in iterable:
-		database.incrementLoopCounter(0)
+		trace.incrementLoopCounter(0)
 		block(elem)
 
 def prwhile(condition, block):
@@ -16,7 +16,7 @@ def prwhile(condition, block):
 	"""
 	cond = condition()
 	while cond:
-		database.incrementLoopCounter(0)
+		trace.incrementLoopCounter(0)
 		block()
 		cond = condition()
 
@@ -26,6 +26,6 @@ def prmap(proc, iterable):
 	Transforms every element of iterable using proc, returning a new sequence object.
 	"""
 	def procwrapper(elem):
-		database.incrementLoopCounter(1)
+		trace.incrementLoopCounter(1)
 		return proc(elem)
 	return map(procwrapper, iterable)

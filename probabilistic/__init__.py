@@ -17,8 +17,8 @@ uniform = erp.UniformRandomPrimitive()
 """
 Soft and hard constraints
 """
-from database import factor
-from database import condition
+from trace import factor
+from trace import condition
 
 
 """

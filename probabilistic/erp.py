@@ -1,5 +1,5 @@
 import random
-import database
+import trace
 import math
 
 """
@@ -18,7 +18,7 @@ class RandomPrimitive:
 	def _sample(self, params, conditionedValue=None):
 		# Assumes _sample is called from __call__ in
 		# conrete subclasses
-		return database.lookupVariableValue(self, params, 2, conditionedValue)
+		return trace.lookupVariableValue(self, params, 2, conditionedValue)
 
 	def _logprob(self, val, params):
 		pass
