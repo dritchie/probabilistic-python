@@ -31,3 +31,9 @@ from inference import sample
 Control structures
 """
 from control import prfor, prwhile, prmap
+
+
+"""
+Stochastic memoization
+"""
+from memoize import mem
