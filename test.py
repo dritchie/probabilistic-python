@@ -143,6 +143,37 @@ def sprinklerTest():
 
 	return rain("day2")
 
+## ChurchServ version of the above test, for comparison:
+# (define (noisy-or a astrength b bstrength baserate)
+#   (or (and (flip astrength) a)
+#       (and (flip bstrength) b)
+#       (flip baserate)))
+# (define sprinklerTest
+#   (mh-query 100 100
+#      (define weight (lambda (ofwhat)
+#        (case ofwhat
+#          (('rain-str) 0.9)
+#          (('rain-prior) 0.3)
+#          (('sprinkler-str) 0.9)
+#          (('sprinkler-prior) 0.2)
+#          (('grass-baserate) 0.1))))
+#      (define grass-is-wet (mem (lambda (day)
+#        (noisy-or
+#         (rain day) (weight 'rain-str)
+#         (sprinkler day) (weight 'sprinkler-str)
+#         (weight 'grass-baserate)))))
+#      (define rain (mem (lambda (day)
+#        (flip (weight 'rain-prior)))))
+#      (define sprinkler (mem (lambda (day)
+#        (flip (weight 'sprinkler-prior)))))
+     
+#      (rain 'day2)
+     
+#      #t
+#   )
+# )
+# (hist sprinklerTest "Rained on Day2?")
+
 ###############################
 
 if __name__ == "__main__":
