@@ -2,14 +2,49 @@ import trace
 import copy
 import random
 import math
+from collections import Counter
 
 
-def sample(computation, iters):
+def distrib(computation, sampler, *samplerArgs):
+	"""
+	Compute the discrete distribution over the given computation
+	Only appropriate for computations that return a discrete value
+	"""
+	hist = Counter()
+	samps = sampler(computation, *samplerArgs)
+	for s in samps:
+		hist[s[0]] += 1
+	flnumsamps = float(len(samps))
+	for s in hist:
+		hist[s] /= flnumsamps
+	return hist
+
+def expectation(computation, sampler, *samplerArgs):
+	"""
+	Compute the expected value of a computation.
+	Only appropriate for computations whose return value overloads the += and / operators
+	"""
+	samps = sampler(computation, *samplerArgs)
+	mean = samps[0][0]
+	for s in samps[1:]:
+		mean += s[0]
+	return mean / len(samps)
+
+def MAP(computation, sampler, *samplerArgs):
+	"""
+	Maximum a posteriori inference (returns the highest probability sample)
+	"""
+	samps = sampler(computation, *samplerArgs)
+	maxelem = max(samps, key=lambda s: s[1])
+	return maxelem[0]
+
+
+def traceMH(computation, iters):
 	"""
 	Sample from a probabilistic computation for some
-	number of iterations.
+	number of iterations using single-variable-proposal
+	Metropolis-Hastings
 
-	This uses vanilla, single-variable trace MH
 	TODO: Implement other inference backends.
 	"""
 
@@ -34,7 +69,7 @@ def sample(computation, iters):
 		return [currsamp for i in range(iters)]
 
 	# MH inference loop
-	samps = [currsamp]
+	samps = [(currsamp, trace.getCurrentTrace().logprob)]
 	i = 0
 	while i < iters:
 
@@ -67,7 +102,7 @@ def sample(computation, iters):
 		else:
 			trace.setCurrentTrace(currtrace)
 		proposalsMade += 1
-		samps.append(currsamp)
+		samps.append((currsamp, trace.getCurrentTrace().logprob))
 
 	trace.setCurrentTrace(None)
 

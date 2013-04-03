@@ -24,7 +24,10 @@ from trace import condition
 """
 Inference procedures
 """
-from inference import sample
+from inference import distrib
+from inference import expectation
+from inference import MAP
+from inference import traceMH
 
 
 """

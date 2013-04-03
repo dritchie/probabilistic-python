@@ -4,48 +4,36 @@ from collections import Counter
 
 ###############################
 
-def distribForward(computation, iters, postprocess = (lambda x : x)):
+def distribForward(computation, iters):
 	hist = Counter()
 	i = 0
 	while i < iters:
 		i += 1
-		hist[postprocess(computation())] += 1.0/iters
+		hist[computation()] += 1
+	for x in hist:
+		hist[x] /= float(iters)
 	return hist
 
-def distribMH(computation, iters, postprocess = (lambda x : x)):
-	hist = Counter()
-	samps = sample(computation, iters)
-	for s in samps:
-		hist[postprocess(s)] += 1.0/iters
-	return hist
-
-def compareForwardToMHDists(computation, iters, postprocess = (lambda x : x)):
-	forwardhist = distribForward(computation, iters, postprocess)
+def compareForwardToMHDists(computation, iters):
+	forwardhist = distribForward(computation, iters)
 	print "Forward hist:"
 	print forwardhist
-	mhhist = distribMH(computation, iters, postprocess)
+	mhhist = distrib(computation, traceMH, iters)
 	print "MH hist:"
 	print mhhist
 
-def meanForward(computation, iters, postprocess = (lambda x : x)):
-	mean = 0.0
+def meanForward(computation, iters):
+	mean = computation()
 	i = 0
-	while i < iters:
+	while i < iters-1:
 		i += 1
-		mean += postprocess(computation())
+		mean += computation()
 	return mean / iters
 
-def meanMH(computation, iters, postprocess = (lambda x : x)):
-	mean = 0.0
-	samps = sample(computation, iters)
-	for s in samps:
-		mean += postprocess(s)
-	return mean / iters
-
-def compareForwardToMHMeans(computation, iters, postprocess = (lambda x : x)):
-	forwardmean = meanForward(computation, iters, postprocess)
+def compareForwardToMHMeans(computation, iters):
+	forwardmean = meanForward(computation, iters)
 	print "Forward mean: {0}".format(forwardmean)
-	mhmean = meanMH(computation, iters, postprocess)
+	mhmean = expectation(computation, traceMH, iters)
 	print "MH mean: {0}".format(mhmean)
 
 ###############################
@@ -56,6 +44,9 @@ def ones():
 	else:
 		return []
 
+def numOnes():
+	return len(ones())
+
 def constrainedOnes():
 	seq = ones()
 	factor(-math.pow(abs(len(seq) - 4), 10))
@@ -63,7 +54,7 @@ def constrainedOnes():
 
 def sumOfTen():
 	num = 0
-	# num += flip(0.5, conditionedValue=1)
+	# num += flip(0.5, conditionedValue=True)
 	num += flip(0.5)
 	num += flip(0.5)
 	num += flip(0.5)
@@ -156,7 +147,7 @@ def sprinklerTest():
 
 if __name__ == "__main__":
 
-	# compareForwardToMHDists(ones, 1000, len)
+	# compareForwardToMHDists(numOnes, 1000)
 	# compareForwardToMHDists(sumOfTen, 1000)
 	# compareForwardToMHDists(sumOfTenWhile, 1000)
 	# compareForwardToMHDists(sumOfTenFor, 1000)
@@ -167,11 +158,9 @@ if __name__ == "__main__":
 	# compareForwardToMHMeans(oneBinomial, 10000)
 	# compareForwardToMHMeans(onePoisson, 10000)
 
-	# print "Average length: {0}".format(meanMH(constrainedOnes, 1000, lambda x: len(x)))
-
-	# print "Average num 1s: {0}".format(meanMH(constrainedSumOfTen, 1000))
-
 	# print memTest()
 
-	print distribMH(sprinklerTest, 10000)
+	print distrib(sprinklerTest, traceMH, 10000)
+
+	# print MAP(oneGaussian, traceMH, 10000)
 
