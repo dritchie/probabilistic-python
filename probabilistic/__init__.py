@@ -15,10 +15,12 @@ uniform = erp.UniformRandomPrimitive()
 
 
 """
-Soft and hard constraints
+Hard and soft constraints
 """
-from trace import factor
 from trace import condition
+from trace import factor
+def softEq(a, b, tolerance):
+	return erp.gaussian_logprob(a-b, 0, tolerance)
 
 
 """
