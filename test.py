@@ -169,12 +169,56 @@ def sprinklerTest():
      
 #      (rain 'day2)
      
-#      #t
+#      (grass-is-wet 'day2)
 #   )
 # )
 # (hist sprinklerTest "Rained on Day2?")
 
 stringLengthProbs = [1.0/25, 2.0/25, 3.0/25, 4.0/25, 5.0/25, 4.0/25, 3.0/25, 2.0/25, 1.0/25]
+penaltyMultiplier = 1
+
+def constrainedStringA():
+	numelems = multinomial(stringLengthProbs)
+	seq = prmap(lambda x: int(flip(0.5)), range(numelems))
+	if numelems % 2 == 0:
+		factor(-penaltyMultiplier * sum(filter(lambda num: num == 1, seq)))
+	else:
+		factor(-penaltyMultiplier * sum(filter(lambda num: num == 0, seq)))
+	return tuple(seq)
+
+def constrainedStringATrueDist():
+	def stringsOfLength(n):
+		def helper(n, seqSoFar):
+			if n == 0:
+				yield tuple(seqSoFar)
+			else:
+				for i in xrange(2):
+					for tup in helper(n-1, seqSoFar + [i]):
+						yield tup
+		for tup in helper(n, []):
+			yield tup
+	hist = {}
+	for numelems in xrange(0, 9):
+		# Probability of choosing this many elements
+		numlp = erp.multinomial_logprob(numelems, stringLengthProbs)
+		for seq in stringsOfLength(numelems):
+			lp = 0.0
+			# Prior probability of each element value
+			for elem in seq:
+				lp -= math.log(2)
+			# Penalties
+			if numelems % 2 == 0:
+				lp -= penaltyMultiplier * sum(filter(lambda num: num == 1, seq))
+			else:
+				lp -= penaltyMultiplier * sum(filter(lambda num: num == 0, seq))
+			hist[seq] = numlp + lp
+	# Normalize by partition function
+	logz = math.log(sum(map(lambda lp: math.exp(lp), hist.values())))
+	for seq in hist:
+		hist[seq] = math.exp(hist[seq] - logz)
+	return hist
+
+
 def constrainedStringB():
 	onethird = 1.0/3
 	numelems = multinomial(stringLengthProbs)
@@ -182,11 +226,11 @@ def constrainedStringB():
 	numIdenticalConsec = 0
 	for i in xrange(numelems-1):
 		numIdenticalConsec += (seq[i] == seq[i+1])
-	factor(-numIdenticalConsec)
+	factor(-penaltyMultiplier * numIdenticalConsec)
 	numDifferentOpposing = 0
 	for i in xrange(numelems/2):
 		numDifferentOpposing += (seq[i] != seq[numelems-1-i])
-	factor(-numDifferentOpposing)
+	factor(-penaltyMultiplier * numDifferentOpposing)
 	return tuple(seq)
 
 def constrainedStringBTrueDist():
@@ -205,7 +249,7 @@ def constrainedStringBTrueDist():
 		# Probability of choosing this many elements
 		numlp = erp.multinomial_logprob(numelems, stringLengthProbs)
 		for seq in stringsOfLength(numelems):
-			lp = 0
+			lp = 0.0
 			# Prior probability of each element value
 			for elem in seq:
 				lp -= math.log(3)
@@ -213,12 +257,12 @@ def constrainedStringBTrueDist():
 			numIdenticalConsec = 0
 			for i in xrange(numelems-1):
 				numIdenticalConsec += (seq[i] == seq[i+1])
-			lp -= numIdenticalConsec
+			lp -= penaltyMultiplier * numIdenticalConsec
 			# Different opposing element penalty
 			numDifferentOpposing = 0
 			for i in xrange(numelems/2):
 				numDifferentOpposing += (seq[i] != seq[numelems-1-i])
-			lp -= numDifferentOpposing
+			lp -= penaltyMultiplier * numDifferentOpposing
 			hist[seq] = numlp + lp
 	# Normalize by partition function
 	logz = math.log(sum(map(lambda lp: math.exp(lp), hist.values())))
@@ -226,13 +270,11 @@ def constrainedStringBTrueDist():
 		hist[seq] = math.exp(hist[seq] - logz)
 	return hist
 
-def constrainedStringBCompareMHtoTrue():
-	truedist = constrainedStringBTrueDist();
-	estdist = distrib(constrainedStringB, traceMH, 10000)
+def klDivergence(P, Q):
 	kldiv = 0.0
-	for tup in truedist:
-		q = truedist[tup]
-		p = estdist[tup]
+	for x in P:
+		p = P[x]
+		q = Q[x]
 		if p != 0.0:
 			logq = math.log(q) if q != 0.0 else -float('inf')
 			kldiv += (math.log(p) - logq) * p
@@ -261,5 +303,6 @@ if __name__ == "__main__":
 
 	# print MAP(oneGaussian, traceMH, 10000)
 
-	print constrainedStringBCompareMHtoTrue()
+	print klDivergence(distrib(constrainedStringB, traceMH, 10000), constrainedStringBTrueDist())
+	#print klDivergence(distrib(constrainedStringA, traceMH, 10000), constrainedStringATrueDist())
 
