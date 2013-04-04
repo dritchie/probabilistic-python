@@ -54,9 +54,10 @@ def constrainedOnes():
 
 def sumOfTen():
 	num = 0
-	# num += flip(0.5, conditionedValue=True)
-	num += flip(0.5)
-	num += flip(0.5)
+	num += flip(0.5, conditionedValue=True)
+	num += flip(0.5, conditionedValue=True)
+	# num += flip(0.5)
+	# num += flip(0.5)
 	num += flip(0.5)
 	num += flip(0.5)
 	num += flip(0.5)
@@ -303,6 +304,6 @@ if __name__ == "__main__":
 
 	# print MAP(oneGaussian, traceMH, 10000)
 
-	print klDivergence(distrib(constrainedStringB, traceMH, 10000), constrainedStringBTrueDist())
-	#print klDivergence(distrib(constrainedStringA, traceMH, 10000), constrainedStringATrueDist())
+	# print klDivergence(distrib(constrainedStringB, traceMH, 10000), constrainedStringBTrueDist())
+	# print klDivergence(distrib(constrainedStringA, traceMH, 10000), constrainedStringATrueDist())
 

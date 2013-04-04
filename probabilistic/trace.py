@@ -9,15 +9,16 @@ class RandomVariableRecord:
 	These form the 'choice points' in a probabilistic program trace.
 	"""
 
-	def __init__(self, erp, params, val, logprob):
+	def __init__(self, erp, params, val, logprob, conditioned=False):
 		self.erp = erp
 		self.params = params
 		self.val = val
 		self.logprob = logprob
 		self.active = True
+		self.conditioned = conditioned
 
 	def __deepcopy__(self, memo):
-		return RandomVariableRecord(self.erp, self.params[:], self.val, self.logprob)
+		return RandomVariableRecord(self.erp, self.params[:], self.val, self.logprob, self.conditioned)
 
 class RandomExecutionTrace:
 	"""
@@ -46,13 +47,12 @@ class RandomExecutionTrace:
 	def numVars(self):
 		return len(self._vars)
 
-	def chooseVariableRandomly(self):
+	def randomFreeVar(self):
 		"""
-		Returns a randomly-chosen variable from the trace
+		Returns a randomly-chosen free variable from the trace
 		Technically, returns a (name, record) pair
 		"""
-		name = random.choice(self._vars.keys())
-		return (name, self._vars[name])
+		return random.choice(filter(lambda tup: not tup[1].conditioned, self._vars.iteritems()))
 
 	def traceUpdate(self, computation):
 		"""
@@ -137,7 +137,7 @@ class RandomExecutionTrace:
 				val = conditionedValue
 			ll = erp._logprob(val, params)
 			self.newlogprob += ll
-			record = RandomVariableRecord(erp, params, val, ll)
+			record = RandomVariableRecord(erp, params, val, ll, conditionedValue != None)
 			self._vars[name] = record
 		else:
 			# Reuse existing variable

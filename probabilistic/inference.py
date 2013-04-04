@@ -78,7 +78,7 @@ def traceMH(computation, iters):
 		tr = trace.getCurrentTrace()
 
 		# Make proposal for a randomly-chosen variable
-		name, var = tr.chooseVariableRandomly()
+		name, var = tr.randomFreeVar()
 		propval = var.erp._proposal(var.val, var.params)
 		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
 		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
