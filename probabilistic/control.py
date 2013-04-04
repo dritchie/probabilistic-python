@@ -29,3 +29,9 @@ def prmap(proc, iterable):
 		trace.incrementLoopCounter(1)
 		return proc(elem)
 	return map(procwrapper, iterable)
+
+def repeat(times, proc):
+	"""
+	Evaluate proc() 'times' times and build a list out of the results
+	"""
+	return prmap(lambda x: proc(), range(times))

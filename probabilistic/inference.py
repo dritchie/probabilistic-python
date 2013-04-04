@@ -25,10 +25,16 @@ def expectation(computation, sampler, *samplerArgs):
 	Only appropriate for computations whose return value overloads the += and / operators
 	"""
 	samps = sampler(computation, *samplerArgs)
-	mean = samps[0][0]
-	for s in samps[1:]:
-		mean += s[0]
-	return mean / len(samps)
+	return mean(map(lambda s: s[0], samps))
+
+def mean(values):
+	"""
+	Compute the mean of a set of values
+	"""
+	mean = values[0]
+	for v in values[1:]:
+		mean += v
+	return mean / float(len(values))
 
 def MAP(computation, sampler, *samplerArgs):
 	"""
@@ -39,7 +45,7 @@ def MAP(computation, sampler, *samplerArgs):
 	return maxelem[0]
 
 
-def traceMH(computation, iters):
+def traceMH(computation, numsamps, lag=1, verbose=False):
 	"""
 	Sample from a probabilistic computation for some
 	number of iterations using single-variable-proposal
@@ -71,6 +77,7 @@ def traceMH(computation, iters):
 	# MH inference loop
 	samps = [(currsamp, trace.getCurrentTrace().logprob)]
 	i = 0
+	iters = numsamps * lag
 	while i < iters:
 
 		i += 1
@@ -102,9 +109,13 @@ def traceMH(computation, iters):
 		else:
 			trace.setCurrentTrace(currtrace)
 		proposalsMade += 1
-		samps.append((currsamp, trace.getCurrentTrace().logprob))
+
+		if i % lag == 0:
+			samps.append((currsamp, trace.getCurrentTrace().logprob))
 
 	trace.setCurrentTrace(None)
 
-	print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)
+	if verbose:
+		print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)
+
 	return samps

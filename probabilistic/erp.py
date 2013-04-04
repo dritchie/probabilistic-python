@@ -44,7 +44,7 @@ class FlipRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, p, conditionedValue=None):
+	def __call__(self, p=0.5, conditionedValue=None):
 		return self._sample([p], conditionedValue)
 
 	def _sample_impl(self, params):
@@ -387,3 +387,18 @@ class UniformRandomPrimitive(RandomPrimitive):
 
 	# TODO: Custom proposal kernel?
 
+
+
+"""
+Singleton instances of all the ERP gerneators
+"""
+
+flip = FlipRandomPrimitive()
+gaussian = GaussianRandomPrimitive()
+gamma = GammaRandomPrimitive()
+beta = BetaRandomPrimitive()
+binomial = BinomialRandomPrimitive()
+poisson = PoissonRandomPrimitive()
+dirichlet = DirichletRandomPrimitive()
+multinomial = MultinomialRandomPrimitive()
+uniform = UniformRandomPrimitive()

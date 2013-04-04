@@ -1,7 +1,7 @@
 import cPickle
 
 
-class MemoizedFunction:
+class _MemoizedFunction:
 	"""
 	Wrapper around a function to memoize its results
 	Source: http://stackoverflow.com/questions/4669391/python-anyone-have-a-memoizing-decorator-that-can-handle-unhashable-arguments
@@ -23,4 +23,4 @@ class MemoizedFunction:
 			return self.cache[str]
 
 def mem(func):
-	return MemoizedFunction(func)
+	return _MemoizedFunction(func)

@@ -103,7 +103,7 @@ class RandomExecutionTrace:
 			f = f.f_back
 		name = ""
 		while f != None and f != self.rootframe:
-			name = "{0}:{1}:{2}|".format(id(f.f_code), f.f_lineno, self.loopcounters[id(f)]) + name
+			name = "{0}:{1}:{2}:{3}|".format(id(f.f_code), self.loopcounters[id(f)], f.f_lineno, f.f_lasti) + name
 			f = f.f_back
 		return name
 

@@ -1,0 +1,301 @@
+
+from inference import *
+from control import *
+from trace import *
+from erp import *
+
+samples = 150
+lag = 20
+runs = 5
+errorTolerance = 0.07
+
+def test(name, estimates, trueExpectation, tolerance=errorTolerance):
+
+	print "test: {0} ...".format(name),
+
+	errors = map(lambda estimate: abs(estimate - trueExpectation), estimates)
+	meanAbsError = mean(errors)
+	if meanAbsError > tolerance:
+		print "failed! True mean: {0} | Test mean: {1}".format(trueExpectation, mean(estimates))
+	else:
+		print "passed."
+
+def mhtest(name, computation, trueExpectation, tolerance=errorTolerance):
+	test(name, repeat(runs, lambda: expectation(computation, traceMH, samples, lag)), trueExpectation, tolerance)
+
+
+if __name__ == "__main__":
+
+	print "starting tests..."
+
+
+	test("random, no query", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: flip(0.7)))), \
+		  0.7)
+
+
+	def flipSetTest():
+		a = 1.0 / 1000
+		condition(flip(a))
+		return a
+	mhtest("setting a flip", \
+			flipSetTest, \
+			1.0/1000, \
+			tolerance=1e-15)
+
+
+	mhtest("unconditioned flip", \
+			lambda: flip(0.7), \
+			0.7)
+
+
+	def andConditionedOnOrTest():
+		a = flip()
+		b = flip()
+		condition(a or b)
+		return a and b
+	mhtest("and conditioned on or", \
+			andConditionedOnOrTest, \
+			1.0/3)
+
+
+	def biasedFlipTest():
+		a = flip(0.3)
+		b = flip(0.3)
+		condition(a or b)
+		return a and b
+	mhtest("and conditioned on or, biased flip", \
+			biasedFlipTest, \
+			(0.3*0.3) / (0.3*0.3 + 0.7*0.3 + 0.3*0.7))
+
+
+	def conditionedFlipTest():
+		bitFlip = lambda fidelity, x: flip(fidelity if x else 1 - fidelity)
+		hyp = flip(0.7)
+		condition(bitFlip(0.8, hyp))
+		return hyp
+	mhtest("conditioned flip", \
+			conditionedFlipTest, \
+			(0.7*0.8) / (0.7*0.8 + 0.3*0.2))
+
+
+	def randomIfBranchTest():
+		if (flip(0.7)):
+			return flip(0.2)
+		else:
+			return flip(0.8)
+	mhtest("random 'if' with random branches, unconditioned", \
+			randomIfBranchTest, \
+			0.7*0.2 + 0.3*0.8)
+
+
+	mhtest("flip with random weight, unconditioned", \
+			lambda: flip(0.2 if flip(0.7) else 0.8), \
+			0.7*0.2 + 0.3*0.8)
+
+
+	def randomProcAppTest():
+		proc = (lambda x: flip(0.2)) if flip(0.7) else (lambda x: flip(0.8))
+		return proc(1)
+	mhtest("random procedure application, unconditioned", \
+			randomProcAppTest, \
+			0.7*0.2 + 0.3*0.8)
+
+
+	def conditionedMultinomialTest():
+		hyp = ['b', 'c', 'd'][multinomial([0.1, 0.6, 0.3])]
+		def observe(x):
+			if flip(0.8):
+				return x
+			else:
+				return 'b'
+		condition(observe(hyp) == 'b')
+		return hyp == 'b'
+	mhtest("conditioned multinomial", \
+			conditionedMultinomialTest, \
+			0.357)
+
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define (power-law prob x) (if (flip prob) x (power-law prob (+ x 1))))
+#                                 (define a (power-law 0.3 1))
+#                                 (< a 5)
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             (apply + ((lambda (prob) (map (lambda (x) (* (expt (- 1 prob) (- x 1)) prob)) (list 1 2 3 4))) 0.3))
+#             error-tolerance
+#             "recursive stochastic fn using define, unconditioned." )
+
+	# def recursiveStochasticTest():
+	# 	def powerLaw(prob, x):
+	# 		if flip(prob):
+	# 			return x
+	# 		else:
+	# 			return powerLaw(prob, x+1)
+	# 	a = powerLaw(0.3, 1)
+	# 	return a < 5
+	# mhtest("recursive stochastic fn, unconditioned", \
+	# 		recursiveStochasticTest, \
+	# 		TRUE_EXPECTATION_GOES_HERE)
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define proc (mem (lambda (x) (flip 0.8))))
+#                                 (and (proc 1) (proc 2) (proc 1) (proc 2))
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             0.64
+#             error-tolerance
+#             "memoized flip, unconditioned." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define proc (mem (lambda (x) (flip 0.2))))
+#                                 (proc 1)
+#                                 (or (proc 1) (proc 2) (proc 2) (proc 2)) )))
+#             (lambda (x) (if x 1 0)) 
+#             (/ (+ (* 0.2 0.2) (* 0.2 0.8)) (+ (* 0.2 0.2) (* 0.2 0.8) (* 0.8 0.2)))
+#             ;;(/ (+ (* 0.2 0.2  0.2 0.2 0.2) (* 0.2 0.2  0.8 0.8 0.8)) (+ (* 0.2 0.2  0.2 0.2 0.2) (* 0.2 0.2  0.8 0.8 0.8) (* 0.8 0.8 0.2 0.2 0.2)))
+#             error-tolerance
+#             "memoized flip, conditioned." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define a (flip 0.8))
+#                                 (define proc (mem (lambda (x) a)))
+#                                 (and (proc 1) (proc 1))
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             0.8
+#             error-tolerance
+#             "bound symbol used inside memoizer, unconditioned." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define proc (mem (lambda (x) (flip 0.8))))
+#                                 (and (proc (uniform-draw (list 1 2 3))) (proc (uniform-draw (list 1 2 3))))
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             (+ (* (/ 1 3) 0.8) (* (/ 2 3) (* 0.8 0.8)))
+#             error-tolerance
+#             "memoized flip with random argument, unconditioned." )
+
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define proc (if (flip 0.7) (lambda (x) (flip 0.2)) (lambda (x) (flip 0.8))))
+#                                 (define memproc (mem proc))
+#                                 (and (memproc 1) (memproc 2))
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             (+ (* 0.7 0.2 0.2) (* 0.3 0.8 0.8))
+#             error-tolerance
+#             "memoized random procedure, unconditioned." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define bit-flip (lambda (fidelity x) (flip (if x fidelity (- 1 fidelity)))))
+#                                 (rejection-query (define a (flip 0.7)) a (bit-flip 0.8 a))
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             (/ (* 0.7 0.8) (+ (* 0.7 0.8) (* 0.3 0.2)))
+#             error-tolerance
+#             "mh-query over rejection query for conditioned flip." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define a (if (flip 0.9) (first (beta 1 5)) 0.7))
+#                                 (define b (flip a))
+#                                 a
+#                                 b )))
+#             (lambda (x) x)
+#             0.417 ;approximated by 10000 rejection samples (in church, but not with mh...).
+#             error-tolerance
+#             "trans-dimensional." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define a (if (flip) (mem flip) (mem flip)))
+#                                 (define b (a))
+#                                 b
+#                                 true )))
+#             (lambda (x) (if x 1 0)) 
+#             0.5
+#             error-tolerance
+#             "memoized flip in if branch (create/destroy memprocs), unconditioned." )
+
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define bb (make-dirichlet-discrete (list 0.5 0.5 0.5)))
+#                                 (= (bb) (bb))
+#                                 true )))
+#             (lambda (b) (if b 1 0))
+#             (/ (+ 1 0.5) (+ 1 (* 3 0.5)))
+#             error-tolerance
+#             "symmetric dirichlet-discrete, unconditioned." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define bb (make-dirichlet-discrete (list 0.5 0.5)))
+#                                 (= 0 (bb))
+#                                 (= 0 (bb)) )))
+#             (lambda (b) (if b 1 0))
+#             (/ (+ 1 0.5) (+ 1 (* 2 0.5)))
+#             error-tolerance
+#             "symmetric dirichlet-discrete, conditioned." )
+
+# (define crp-param 0.5)
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define draw-type (make-CRP crp-param));(CRPmem 1.0 gensym))
+#                                 (define class (mem (lambda (x) (draw-type))))
+#                                 (eq? (class 'bob) (class 'mary))
+#                                 (eq? (class 'bob) (class 'jim)))))
+#             (lambda (x) (if x 1 0))
+#             (/ 2.0 (+ 2.0 crp-param))
+#             error-tolerance
+#             "CRP third customer at first table, conditioned on second customer at first table." )
+
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define draw-type (DPmem 1.0 gensym))
+#                                 (define class (mem (lambda (x) (draw-type))))
+#                                 (eq? (class 'bob) (class 'mary))
+#                                 true)))
+#             (lambda (x) (if x 1 0))
+#             0.5
+#             error-tolerance
+#             "DPmem of gensym, unconditioned." )
+
+# (define dirichlet-param 0.01)
+# (define CRP-param 1.0)
+# (check-test (repeat runs
+#                     (lambda ()
+#                       (mh-query samples lag
+#                                 (define draw-type (make-CRP CRP-param))
+#                                 (define obs (mem (lambda (type) (make-symmetric-dirichlet-discrete 3 dirichlet-param))))
+#                                 (= (sample (obs (draw-type))) (sample (obs (draw-type))))
+#                                 true)))
+#             (lambda (x) (if x 1 0))
+#             (+ (* (/ 1 (+ 1 CRP-param))  (/ (+ 1 dirichlet-param) (+ 1 (* 3 dirichlet-param))))   ;same crp table, same dirichlet draws
+#                (* (/ CRP-param (+ 1 CRP-param))   (/ 1 3))) ;different crp tables, same dirichlet draws...
+#             error-tolerance
+#             "varying numbers of xrps inside mem." )
+
+	print "tests done!"
+
