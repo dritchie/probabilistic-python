@@ -175,43 +175,45 @@ def sprinklerTest():
 # )
 # (hist sprinklerTest "Rained on Day2?")
 
-stringLengthProbs = [1.0/25, 2.0/25, 3.0/25, 4.0/25, 5.0/25, 4.0/25, 3.0/25, 2.0/25, 1.0/25]
-penaltyMultiplier = 1
+# stringLengthProbs = [1.0/25, 2.0/25, 3.0/25, 4.0/25, 5.0/25, 4.0/25, 3.0/25, 2.0/25, 1.0/25]
+# stringLengths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+stringLengthProbs = [0.5, 0.5]
+stringLengths = [4, 5]
+penaltyMultiplier = 10
+
+def stringsOfLength(length, numvals):
+	def helper(n, seqSoFar):
+		if n == 0:
+			yield tuple(seqSoFar)
+		else:
+			for i in xrange(numvals):
+				for tup in helper(n-1, seqSoFar + [i]):
+					yield tup
+	for tup in helper(length, []):
+		yield tup
 
 def constrainedStringA():
-	numelems = multinomial(stringLengthProbs)
+	numelems = stringLengths[multinomial(stringLengthProbs)]
 	seq = prmap(lambda x: int(flip(0.5)), range(numelems))
 	if numelems % 2 == 0:
-		factor(-penaltyMultiplier * sum(filter(lambda num: num == 1, seq)))
+		factor(-penaltyMultiplier * len(filter(lambda num: num == 1, seq)))
 	else:
-		factor(-penaltyMultiplier * sum(filter(lambda num: num == 0, seq)))
+		factor(-penaltyMultiplier * len(filter(lambda num: num == 0, seq)))
 	return tuple(seq)
 
 def constrainedStringATrueDist():
-	def stringsOfLength(n):
-		def helper(n, seqSoFar):
-			if n == 0:
-				yield tuple(seqSoFar)
-			else:
-				for i in xrange(2):
-					for tup in helper(n-1, seqSoFar + [i]):
-						yield tup
-		for tup in helper(n, []):
-			yield tup
 	hist = {}
-	for numelems in xrange(0, 9):
+	for numelems in stringLengths:
 		# Probability of choosing this many elements
-		numlp = erp.multinomial_logprob(numelems, stringLengthProbs)
-		for seq in stringsOfLength(numelems):
-			lp = 0.0
+		numlp = erp.multinomial_logprob(stringLengths.index(numelems), stringLengthProbs)
+		for seq in stringsOfLength(numelems, 2):
 			# Prior probability of each element value
-			for elem in seq:
-				lp -= math.log(2)
+			lp = -numelems*math.log(2)
 			# Penalties
 			if numelems % 2 == 0:
-				lp -= penaltyMultiplier * sum(filter(lambda num: num == 1, seq))
+				lp -= penaltyMultiplier * len(filter(lambda num: num == 1, seq))
 			else:
-				lp -= penaltyMultiplier * sum(filter(lambda num: num == 0, seq))
+				lp -= penaltyMultiplier * len(filter(lambda num: num == 0, seq))
 			hist[seq] = numlp + lp
 	# Normalize by partition function
 	logz = math.log(sum(map(lambda lp: math.exp(lp), hist.values())))
@@ -222,7 +224,7 @@ def constrainedStringATrueDist():
 
 def constrainedStringB():
 	onethird = 1.0/3
-	numelems = multinomial(stringLengthProbs)
+	numelems = stringLengths[multinomial(stringLengthProbs)]
 	seq = prmap(lambda x: multinomial([onethird, onethird, onethird]), range(numelems))
 	numIdenticalConsec = 0
 	for i in xrange(numelems-1):
@@ -235,25 +237,13 @@ def constrainedStringB():
 	return tuple(seq)
 
 def constrainedStringBTrueDist():
-	def stringsOfLength(n):
-		def helper(n, seqSoFar):
-			if n == 0:
-				yield tuple(seqSoFar)
-			else:
-				for i in xrange(3):
-					for tup in helper(n-1, seqSoFar + [i]):
-						yield tup
-		for tup in helper(n, []):
-			yield tup
 	hist = {}
-	for numelems in xrange(0, 9):
+	for numelems in stringLengths:
 		# Probability of choosing this many elements
-		numlp = erp.multinomial_logprob(numelems, stringLengthProbs)
-		for seq in stringsOfLength(numelems):
-			lp = 0.0
+		numlp = erp.multinomial_logprob(stringLengths.index(numelems), stringLengthProbs)
+		for seq in stringsOfLength(numelems, 3):
 			# Prior probability of each element value
-			for elem in seq:
-				lp -= math.log(3)
+			lp = -numelems*math.log(3)
 			# Identical consecutive element penalty
 			numIdenticalConsec = 0
 			for i in xrange(numelems-1):
@@ -281,6 +271,11 @@ def klDivergence(P, Q):
 			kldiv += (math.log(p) - logq) * p
 	return kldiv
 
+def totalVariationDist(P, Q):
+	total = 0.0
+	for x in P:
+		total += abs(P[x] - Q[x])
+	return 0.5*total
 
 
 ###############################
@@ -304,6 +299,11 @@ if __name__ == "__main__":
 
 	# print MAP(oneGaussian, traceMH, 10000)
 
-	# print klDivergence(distrib(constrainedStringB, traceMH, 10000), constrainedStringBTrueDist())
+	# print distrib(constrainedStringA, traceMH, 10000)
+	# print "-------------------------------------------"
+	# print constrainedStringATrueDist()
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000))
+	print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 10000))
 	# print klDivergence(distrib(constrainedStringA, traceMH, 10000), constrainedStringATrueDist())
-
+	# print klDivergence(distrib(constrainedStringB, traceMH, 10000), constrainedStringBTrueDist())
+	
