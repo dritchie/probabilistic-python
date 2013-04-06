@@ -402,3 +402,15 @@ poisson = PoissonRandomPrimitive()
 dirichlet = DirichletRandomPrimitive()
 multinomial = MultinomialRandomPrimitive()
 uniform = UniformRandomPrimitive()
+
+
+"""
+Random utilies built on top of ERPs
+"""
+
+def multinomialDraw(items, probs):
+	return items[multinomial(probs)]
+
+def uniformDraw(items):
+	n = len(items)
+	return items[multinomial(map(lambda x: 1.0/n, range(n)))]

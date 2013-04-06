@@ -3,6 +3,7 @@ from inference import *
 from control import *
 from trace import *
 from erp import *
+from memoize import *
 
 samples = 150
 lag = 20
@@ -103,7 +104,7 @@ if __name__ == "__main__":
 
 
 	def conditionedMultinomialTest():
-		hyp = ['b', 'c', 'd'][multinomial([0.1, 0.6, 0.3])]
+		hyp = multinomialDraw(['b', 'c', 'd'], [0.1, 0.6, 0.3])
 		def observe(x):
 			if flip(0.8):
 				return x
@@ -116,124 +117,92 @@ if __name__ == "__main__":
 			0.357)
 
 
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define (power-law prob x) (if (flip prob) x (power-law prob (+ x 1))))
-#                                 (define a (power-law 0.3 1))
-#                                 (< a 5)
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             (apply + ((lambda (prob) (map (lambda (x) (* (expt (- 1 prob) (- x 1)) prob)) (list 1 2 3 4))) 0.3))
-#             error-tolerance
-#             "recursive stochastic fn using define, unconditioned." )
-
-	# def recursiveStochasticTest():
-	# 	def powerLaw(prob, x):
-	# 		if flip(prob):
-	# 			return x
-	# 		else:
-	# 			return powerLaw(prob, x+1)
-	# 	a = powerLaw(0.3, 1)
-	# 	return a < 5
-	# mhtest("recursive stochastic fn, unconditioned", \
-	# 		recursiveStochasticTest, \
-	# 		TRUE_EXPECTATION_GOES_HERE)
-
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define proc (mem (lambda (x) (flip 0.8))))
-#                                 (and (proc 1) (proc 2) (proc 1) (proc 2))
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             0.64
-#             error-tolerance
-#             "memoized flip, unconditioned." )
-
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define proc (mem (lambda (x) (flip 0.2))))
-#                                 (proc 1)
-#                                 (or (proc 1) (proc 2) (proc 2) (proc 2)) )))
-#             (lambda (x) (if x 1 0)) 
-#             (/ (+ (* 0.2 0.2) (* 0.2 0.8)) (+ (* 0.2 0.2) (* 0.2 0.8) (* 0.8 0.2)))
-#             ;;(/ (+ (* 0.2 0.2  0.2 0.2 0.2) (* 0.2 0.2  0.8 0.8 0.8)) (+ (* 0.2 0.2  0.2 0.2 0.2) (* 0.2 0.2  0.8 0.8 0.8) (* 0.8 0.8 0.2 0.2 0.2)))
-#             error-tolerance
-#             "memoized flip, conditioned." )
-
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define a (flip 0.8))
-#                                 (define proc (mem (lambda (x) a)))
-#                                 (and (proc 1) (proc 1))
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             0.8
-#             error-tolerance
-#             "bound symbol used inside memoizer, unconditioned." )
-
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define proc (mem (lambda (x) (flip 0.8))))
-#                                 (and (proc (uniform-draw (list 1 2 3))) (proc (uniform-draw (list 1 2 3))))
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             (+ (* (/ 1 3) 0.8) (* (/ 2 3) (* 0.8 0.8)))
-#             error-tolerance
-#             "memoized flip with random argument, unconditioned." )
+	def recursiveStochasticTest():
+		def powerLaw(prob, x):
+			if flip(prob):
+				return x
+			else:
+				return powerLaw(prob, x+1)
+		a = powerLaw(0.3, 1)
+		return a < 5
+	mhtest("recursive stochastic fn, unconditioned", \
+			recursiveStochasticTest, \
+			0.7599)
 
 
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define proc (if (flip 0.7) (lambda (x) (flip 0.2)) (lambda (x) (flip 0.8))))
-#                                 (define memproc (mem proc))
-#                                 (and (memproc 1) (memproc 2))
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             (+ (* 0.7 0.2 0.2) (* 0.3 0.8 0.8))
-#             error-tolerance
-#             "memoized random procedure, unconditioned." )
+	def memoizedFlipTest():
+		proc = mem(lambda x: flip(0.8))
+		return proc(1) and proc(2) and proc(1) and proc(2)
+	mhtest("memoized flip, unconditioned", \
+			memoizedFlipTest, \
+			0.64)
 
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define bit-flip (lambda (fidelity x) (flip (if x fidelity (- 1 fidelity)))))
-#                                 (rejection-query (define a (flip 0.7)) a (bit-flip 0.8 a))
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             (/ (* 0.7 0.8) (+ (* 0.7 0.8) (* 0.3 0.2)))
-#             error-tolerance
-#             "mh-query over rejection query for conditioned flip." )
 
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define a (if (flip 0.9) (first (beta 1 5)) 0.7))
-#                                 (define b (flip a))
-#                                 a
-#                                 b )))
-#             (lambda (x) x)
-#             0.417 ;approximated by 10000 rejection samples (in church, but not with mh...).
-#             error-tolerance
-#             "trans-dimensional." )
+	def memoizedFlipConditionedTest():
+		proc = mem(lambda x: flip(0.2))
+		condition(proc(1) or proc(2) or proc(2) or proc(2))
+		return proc(1)
+	mhtest("memoized flip, conditioned", \
+			memoizedFlipConditionedTest, \
+			0.5555555555555555)
 
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define a (if (flip) (mem flip) (mem flip)))
-#                                 (define b (a))
-#                                 b
-#                                 true )))
-#             (lambda (x) (if x 1 0)) 
-#             0.5
-#             error-tolerance
-#             "memoized flip in if branch (create/destroy memprocs), unconditioned." )
 
+	def boundSymbolInMemoizerTest():
+		a = flip(0.8)
+		proc = mem(lambda x: a)
+		return proc(1) and proc(1)
+	mhtest("bound symbol used inside memoizer, unconditioned", \
+			boundSymbolInMemoizerTest, \
+			0.8)
+
+
+	def memRandomArgTest():
+		proc = mem(lambda x: flip(0.8))
+		return proc(uniformDraw([1,2,3])) and proc(uniformDraw([1,2,3]))
+	mhtest("memoized flip with random argument, unconditioned", \
+			memRandomArgTest, \
+			0.6933333333333334)
+
+
+	def memRandomProc():
+		proc = (lambda x: flip(0.2)) if flip(0.7) else (lambda x: flip(0.8))
+		memproc = mem(proc)
+		return memproc(1) and memproc(2)
+	mhtest("memoized random procedure, unconditioned", \
+			memRandomProc, \
+			0.22)
+
+
+	def mhOverRejectionTest():
+		def bitFlip(fidelity, x):
+			return flip(fidelity if x else (1-fidelity))
+		def innerQuery():
+			a = flip(0.7)
+			condition(bitFlip(0.8, a))
+			return a
+		return rejectionSample(innerQuery)
+	mhtest("mh-query over rejection query for conditioned flip", \
+			mhOverRejectionTest, \
+			0.903225806451613)
+
+
+	def transDimensionalTest():
+		a = beta(1, 5) if flip(0.9) else 0.7
+		b = flip(a)
+		condition(b)
+		return a
+	mhtest("trans-dimensional", \
+			transDimensionalTest, \
+			0.417)
+
+
+	def memFlipInIfTest():
+		a = mem(flip) if flip() else mem(flip)
+		b = a()
+		return b
+	mhtest("memoized flip in if branch (create/destroy memprocs), unconditioned", \
+			memFlipInIfTest, \
+			0.5)
 
 # (check-test (repeat runs
 #                     (lambda ()

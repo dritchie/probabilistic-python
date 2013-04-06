@@ -2,7 +2,7 @@
 """
 Random variable generators
 """
-from erp import flip, gaussian, gamma, beta, binomial, poisson, dirichlet, multinomial, uniform
+from erp import flip, gaussian, gamma, beta, binomial, poisson, dirichlet, multinomial, uniform, multinomialDraw, uniformDraw
 
 
 """
@@ -16,7 +16,7 @@ def softEq(a, b, tolerance):
 """
 Inference procedures
 """
-from inference import distrib, expectation, MAP, traceMH
+from inference import distrib, expectation, MAP, rejectionSample, traceMH
 
 
 """

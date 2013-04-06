@@ -45,17 +45,39 @@ def MAP(computation, sampler, *samplerArgs):
 	return maxelem[0]
 
 
+def rejectionSample(computation):
+	"""
+	Rejection sample a result from computation that satsifies
+	all conditioning expressions.
+	"""
+
+	# Save whatever the current trace is, because we're about
+	# to nuke it (happens in nested query)
+	originalTrace = trace.getCurrentTrace()
+
+	samp = None
+	conditionsSatisfied = False
+	while not conditionsSatisfied:
+		trace.newTrace()
+		samp = trace.getCurrentTrace().traceUpdate(computation)
+		conditionsSatisfied = trace.getCurrentTrace().conditionsSatisfied
+
+	# Restore original trace
+	trace.setCurrentTrace(originalTrace)
+
+	return samp
+
+
 def traceMH(computation, numsamps, lag=1, verbose=False):
 	"""
 	Sample from a probabilistic computation for some
 	number of iterations using single-variable-proposal
 	Metropolis-Hastings
-
-	TODO: Implement other inference backends.
 	"""
 
-	# No nested query support
-	assert(trace.getCurrentTrace() == None)
+	# Save whatever the current trace is, because we're about
+	# to nuke it (happens in nested query)
+	originalTrace = trace.getCurrentTrace()
 
 	# Analytics
 	proposalsMade = 0
@@ -70,9 +92,9 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 		currsamp = trace.getCurrentTrace().traceUpdate(computation)
 		conditionsSatisfied = trace.getCurrentTrace().conditionsSatisfied
 
-	# Bail early if the computation is deterministic
-	if trace.getCurrentTrace().numVars() == 0:
-		return [currsamp for i in range(iters)]
+	# # Bail early if the computation is deterministic
+	# if trace.getCurrentTrace().numVars() == 0:
+	# 	return [currsamp for i in range(numsamps)]
 
 	# MH inference loop
 	samps = [(currsamp, trace.getCurrentTrace().logprob)]
@@ -84,36 +106,46 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 
 		tr = trace.getCurrentTrace()
 
-		# Make proposal for a randomly-chosen variable
-		name, var = tr.randomFreeVar()
-		propval = var.erp._proposal(var.val, var.params)
-		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
-		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
+		randVarRecord = tr.randomFreeVar()
 
-		# Copy the database, make the proposed change, and update the trace
-		currtrace = tr
-		proptrace = copy.deepcopy(tr)
-		trace.setCurrentTrace(proptrace)
-		vrec = proptrace.getRecord(name)
-		vrec.val = propval
-		vrec.logprob = vrec.erp._logprob(vrec.val, vrec.params)
-		retval = proptrace.traceUpdate(computation)
-
-		# Accept or reject the proposal
-		fwdPropLP += proptrace.newlogprob - math.log(currtrace.numVars())
-		rvsPropLP += proptrace.oldlogprob - math.log(proptrace.numVars())
-		acceptThresh = proptrace.logprob - currtrace.logprob + rvsPropLP - fwdPropLP
-		if proptrace.conditionsSatisfied and math.log(random.random()) < acceptThresh:
-			proposalsAccepted += 1
-			currsamp = retval
+		# If we have no free random variables, then just run the computation
+		# and generate another sample (this may not actually be deterministic,
+		# in the case of nested query)
+		if randVarRecord == None:
+			currsamp = tr.traceUpdate(computation)
+		# Otherwise, make a proposal for a randomly-chosen variable
 		else:
-			trace.setCurrentTrace(currtrace)
-		proposalsMade += 1
+			name, var = randVarRecord
+			propval = var.erp._proposal(var.val, var.params)
+			fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
+			rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
 
+			# Copy the database, make the proposed change, and update the trace
+			currtrace = tr
+			proptrace = copy.deepcopy(tr)
+			trace.setCurrentTrace(proptrace)
+			vrec = proptrace.getRecord(name)
+			vrec.val = propval
+			vrec.logprob = vrec.erp._logprob(vrec.val, vrec.params)
+			retval = proptrace.traceUpdate(computation)
+
+			# Accept or reject the proposal
+			fwdPropLP += proptrace.newlogprob - math.log(currtrace.numVars())
+			rvsPropLP += proptrace.oldlogprob - math.log(proptrace.numVars())
+			acceptThresh = proptrace.logprob - currtrace.logprob + rvsPropLP - fwdPropLP
+			if proptrace.conditionsSatisfied and math.log(random.random()) < acceptThresh:
+				proposalsAccepted += 1
+				currsamp = retval
+			else:
+				trace.setCurrentTrace(currtrace)
+			proposalsMade += 1
+
+		# Record the most recent sample
 		if i % lag == 0:
 			samps.append((currsamp, trace.getCurrentTrace().logprob))
 
-	trace.setCurrentTrace(None)
+	# Restore the original trace
+	trace.setCurrentTrace(originalTrace)
 
 	if verbose:
 		print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)

@@ -52,7 +52,11 @@ class RandomExecutionTrace:
 		Returns a randomly-chosen free variable from the trace
 		Technically, returns a (name, record) pair
 		"""
-		return random.choice(filter(lambda tup: not tup[1].conditioned, self._vars.iteritems()))
+		freeVars = filter(lambda tup: not tup[1].conditioned, self._vars.iteritems())
+		if len(freeVars) == 0:
+			return None
+		else:
+			return random.choice(filter(lambda tup: not tup[1].conditioned, self._vars.iteritems()))
 
 	def traceUpdate(self, computation):
 		"""
