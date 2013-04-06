@@ -63,6 +63,10 @@ class RandomExecutionTrace:
 		Run computation and update this database accordingly
 		"""
 
+		global _trace
+		originalTrace = _trace
+		_trace = self
+
 		self.logprob = 0.0
 		self.newlogprob = 0.0
 		self.loopcounters.clear()
@@ -89,6 +93,8 @@ class RandomExecutionTrace:
 			if not record.active:
 				self.oldlogprob += record.logprob
 		self._vars = {name:record for name,record in self._vars.iteritems() if record.active}
+
+		_trace = originalTrace
 
 		return retval
 
@@ -192,15 +198,7 @@ def incrementLoopCounter(numFrameSkip):
 		_trace.incrementLoopCounter(numFrameSkip+1)
 
 def newTrace():
-	global _trace
-	_trace = RandomExecutionTrace()
-
-def getCurrentTrace():
-	return _trace
-
-def setCurrentTrace(newtrace):
-	global _trace
-	_trace = newtrace
+	return RandomExecutionTrace()
 
 def factor(num):
 	global _trace

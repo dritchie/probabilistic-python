@@ -51,19 +51,12 @@ def rejectionSample(computation):
 	all conditioning expressions.
 	"""
 
-	# Save whatever the current trace is, because we're about
-	# to nuke it (happens in nested query)
-	originalTrace = trace.getCurrentTrace()
-
 	samp = None
 	conditionsSatisfied = False
 	while not conditionsSatisfied:
-		trace.newTrace()
-		samp = trace.getCurrentTrace().traceUpdate(computation)
-		conditionsSatisfied = trace.getCurrentTrace().conditionsSatisfied
-
-	# Restore original trace
-	trace.setCurrentTrace(originalTrace)
+		tr = trace.newTrace()
+		samp = tr.traceUpdate(computation)
+		conditionsSatisfied = tr.conditionsSatisfied
 
 	return samp
 
@@ -75,36 +68,26 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 	Metropolis-Hastings
 	"""
 
-	# Save whatever the current trace is, because we're about
-	# to nuke it (happens in nested query)
-	originalTrace = trace.getCurrentTrace()
-
 	# Analytics
 	proposalsMade = 0
 	proposalsAccepted = 0
 
-	# Run computation to populate the database
-	# with an initial trace
+	# Run computation to get an initial trace
+	tr = None
 	currsamp = None
 	conditionsSatisfied = False
 	while not conditionsSatisfied:
-		trace.newTrace()
-		currsamp = trace.getCurrentTrace().traceUpdate(computation)
-		conditionsSatisfied = trace.getCurrentTrace().conditionsSatisfied
-
-	# # Bail early if the computation is deterministic
-	# if trace.getCurrentTrace().numVars() == 0:
-	# 	return [currsamp for i in range(numsamps)]
+		tr = trace.newTrace()
+		currsamp = tr.traceUpdate(computation)
+		conditionsSatisfied = tr.conditionsSatisfied
 
 	# MH inference loop
-	samps = [(currsamp, trace.getCurrentTrace().logprob)]
+	samps = [(currsamp, tr.logprob)]
 	i = 0
 	iters = numsamps * lag
 	while i < iters:
 
 		i += 1
-
-		tr = trace.getCurrentTrace()
 
 		randVarRecord = tr.randomFreeVar()
 
@@ -123,7 +106,6 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 			# Copy the database, make the proposed change, and update the trace
 			currtrace = tr
 			proptrace = copy.deepcopy(tr)
-			trace.setCurrentTrace(proptrace)
 			vrec = proptrace.getRecord(name)
 			vrec.val = propval
 			vrec.logprob = vrec.erp._logprob(vrec.val, vrec.params)
@@ -136,16 +118,12 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 			if proptrace.conditionsSatisfied and math.log(random.random()) < acceptThresh:
 				proposalsAccepted += 1
 				currsamp = retval
-			else:
-				trace.setCurrentTrace(currtrace)
+				tr = proptrace
 			proposalsMade += 1
 
 		# Record the most recent sample
 		if i % lag == 0:
-			samps.append((currsamp, trace.getCurrentTrace().logprob))
-
-	# Restore the original trace
-	trace.setCurrentTrace(originalTrace)
+			samps.append((currsamp, tr.logprob))
 
 	if verbose:
 		print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)
