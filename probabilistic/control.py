@@ -5,7 +5,7 @@ def ntimes(times, block):
 	Repeat a computation n times
 	"""
 	for i in xrange(times):
-		trace.incrementLoopCounter()
+		trace.incrementLoopCounter(0)
 		block()
 
 def foreach(iterable, block):
