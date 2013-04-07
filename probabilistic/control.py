@@ -6,7 +6,7 @@ def ntimes(times, block):
 	"""
 	for i in xrange(times):
 		trace.incrementLoopCounter(0)
-		block()
+		block(i)
 
 def foreach(iterable, block):
 	"""

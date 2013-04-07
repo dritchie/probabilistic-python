@@ -30,6 +30,11 @@ if __name__ == "__main__":
 	print "starting tests..."
 
 
+	"""
+	Tests adapted from Church
+	"""
+
+
 	test("random, no query", \
 		  repeat(runs, lambda: mean(repeat(samples, lambda: flip(0.7)))), \
 		  0.7)
@@ -265,6 +270,75 @@ if __name__ == "__main__":
 #                (* (/ CRP-param (+ 1 CRP-param))   (/ 1 3))) ;different crp tables, same dirichlet draws...
 #             error-tolerance
 #             "varying numbers of xrps inside mem." )
+
+
+	"""
+	Tests for things specific to Python version
+	"""
+
+
+	def ntimesTest():
+		accum = [0]
+		def block(i):
+			accum[0] += flip()
+		ntimes(10, block)
+		return accum[0] / 10.0
+	mhtest("ntimes control structure", \
+			ntimesTest, \
+			0.5)
+
+
+	def foreachTest():
+		accum = [0]
+		def block(elem):
+			accum[0] += flip()
+		foreach(xrange(10), block)
+		return accum[0] / 10.0
+	mhtest("foreach control structure", \
+			foreachTest, \
+			0.5)
+
+
+	def untilTest():
+		accum = [0]
+		i = [0]
+		def block():
+			i[0] += 1
+			accum[0] += flip()
+		until(lambda: i[0] == 10, block)
+		return accum[0] / 10.0
+	mhtest("until control structure", \
+			untilTest, \
+			0.5)
+
+
+	def mapTest():
+		return sum(map(lambda x: flip(), range(10))) / 10.0
+	mhtest("map control structure", \
+			mapTest, \
+			0.5)
+
+
+	def repeatTest():
+		return sum(repeat(10, flip)) / 10.0
+	mhtest("repeat control structure", \
+			repeatTest, \
+			0.5)
+
+
+	def directConditionTest():
+		accum = [0]
+		def block(i):
+			if i < 5:
+				accum[0] += flip(0.5, conditionedValue=True)
+			else:
+				accum[0] += flip(0.5)
+		ntimes(10, block)
+		return accum[0] / 10.0
+	mhtest("directly conditioning variable values", \
+			directConditionTest, \
+			0.75)
+
 
 	print "tests done!"
 
