@@ -22,7 +22,7 @@ from inference import distrib, expectation, MAP, rejectionSample, traceMH
 """
 Control structures
 """
-from control import prfor, prwhile, prmap, repeat
+from control import ntimes, foreach, until, map, repeat
 
 
 """

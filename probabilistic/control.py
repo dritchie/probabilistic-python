@@ -1,6 +1,14 @@
 import trace
 
-def prfor(iterable, block):
+def ntimes(times, block):
+	"""
+	Repeat a computation n times
+	"""
+	for i in xrange(times):
+		trace.incrementLoopCounter()
+		block()
+
+def foreach(iterable, block):
 	"""
 	'for' loop control structure suitable for use inside probabilistic programs.
 	Invokes block for every element in iterable.
@@ -9,18 +17,19 @@ def prfor(iterable, block):
 		trace.incrementLoopCounter(0)
 		block(elem)
 
-def prwhile(condition, block):
+def until(condition, block):
 	"""
 	'while' loop control structure suitable for use inside probabilistic programs.
 	Invokes block while condition is true.
 	"""
 	cond = condition()
-	while cond:
+	while not cond:
 		trace.incrementLoopCounter(0)
 		block()
 		cond = condition()
 
-def prmap(proc, iterable):
+_map = map
+def map(proc, iterable):
 	"""
 	Higher-order 'map' function suitable for use inside probabilistic programs.
 	Transforms every element of iterable using proc, returning a new sequence object.
@@ -28,10 +37,10 @@ def prmap(proc, iterable):
 	def procwrapper(elem):
 		trace.incrementLoopCounter(1)
 		return proc(elem)
-	return map(procwrapper, iterable)
+	return _map(procwrapper, iterable)
 
 def repeat(times, proc):
 	"""
 	Evaluate proc() 'times' times and build a list out of the results
 	"""
-	return prmap(lambda x: proc(), range(times))
+	return map(lambda x: proc(), range(times))

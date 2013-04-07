@@ -79,18 +79,18 @@ def sumOfTenWhile():
 	def block():
 		i[0] += 1
 		num[0] += flip(0.5)
-	prwhile(lambda: i[0] < 10, block)
+	until(lambda: i[0] == 10, block)
 	return num[0]
 
 def sumOfTenFor():
 	num = [0]
 	def block(i):
 		num[0] += flip(0.5)
-	prfor(xrange(10), block)
+	foreach(xrange(10), block)
 	return num[0]
 
 def sumOfTenMap():
-	return sum(prmap(lambda x: flip(0.5), range(10)))
+	return sum(map(lambda x: flip(0.5), range(10)))
 
 def oneGaussian():
 	return gaussian(10, 0.5)
@@ -194,7 +194,7 @@ def stringsOfLength(length, numvals):
 
 def constrainedStringA():
 	numelems = stringLengths[multinomial(stringLengthProbs)]
-	seq = prmap(lambda x: int(flip(0.5)), range(numelems))
+	seq = repeat(numelems, lambda x: int(flip(0.5)))
 	if numelems % 2 == 0:
 		factor(-penaltyMultiplier * len(filter(lambda num: num == 1, seq)))
 	else:
@@ -225,7 +225,7 @@ def constrainedStringATrueDist():
 def constrainedStringB():
 	onethird = 1.0/3
 	numelems = stringLengths[multinomial(stringLengthProbs)]
-	seq = prmap(lambda x: multinomial([onethird, onethird, onethird]), range(numelems))
+	seq = repeat(numelems, lambda x: multinomial([onethird, onethird, onethird]))
 	numIdenticalConsec = 0
 	for i in xrange(numelems-1):
 		numIdenticalConsec += (seq[i] == seq[i+1])
