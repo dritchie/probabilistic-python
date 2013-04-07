@@ -20,7 +20,7 @@ def foreach(iterable, block):
 def until(condition, block):
 	"""
 	'while' loop control structure suitable for use inside probabilistic programs.
-	Invokes block while condition is true.
+	Invokes block until condition is true.
 	"""
 	cond = condition()
 	while not cond:
