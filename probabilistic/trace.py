@@ -1,6 +1,5 @@
 import inspect
 import copy
-import random
 from collections import Counter
 
 class RandomVariableRecord:
@@ -45,19 +44,11 @@ class RandomExecutionTrace:
 		newdb.conditionsSatisfied = self.conditionsSatisfied
 		return newdb
 
-	def numVars(self):
-		return len(self._vars)
-
-	def randomFreeVar(self):
-		"""
-		Returns a randomly-chosen free variable from the trace
-		Technically, returns a (name, record) pair
-		"""
-		freeVars = filter(lambda tup: not tup[1].conditioned, self._vars.iteritems())
-		if len(freeVars) == 0:
-			return None
-		else:
-			return random.choice(filter(lambda tup: not tup[1].conditioned, self._vars.iteritems()))
+	def freeVarNames(self, structural=True, nonstructural=True):
+		return map(lambda tup: tup[0], \
+				   filter(lambda tup: not tup[1].conditioned and \
+				   					  ((structural and tup[1].structural) or (nonstructural and not tup[1].structural)), \
+						  self._vars.iteritems()))
 
 	def traceUpdate(self, computation):
 		"""

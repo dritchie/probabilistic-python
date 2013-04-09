@@ -60,6 +60,57 @@ def rejectionSample(computation):
 
 	return samp
 
+def _randomChoice(items):
+	"""
+	Like random.choice, but returns None if items is empty
+	"""
+	if len(items) == 0:
+		return None
+	else:
+		return random.choice(items)
+
+def _mhstep(computation, currSamp, currTrace, structural=True, nonstructural=True):
+	"""
+	One step of single-variable proposal Metropolis-Hastings
+	Returns the next sample, the next trace, and a
+	boolean indicating whether the proposal was accepted
+	"""
+
+	# Return values
+	nextTrace = copy.deepcopy(currTrace)
+	samp = currSamp
+	accepted = False
+
+	name = _randomChoice(currTrace.freeVarNames(structural, nonstructural))
+
+	# If we have no free random variables, then just run the computation
+	# and generate another sample (this may not actually be deterministic,
+	# in the case of nested query)
+	if name == None:
+		samp = nextTrace.traceUpdate(computation)
+		accepted = True
+	# Otherwise, make a proposal for a randomly-chosen variable
+	else:
+		var = nextTrace.getRecord(name)
+		propval = var.erp._proposal(var.val, var.params)
+		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
+		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
+
+		# Make the proposed change, and update the trace
+		var.val = propval
+		var.logprob = var.erp._logprob(var.val, var.params)
+		retval = nextTrace.traceUpdate(computation)
+
+		# Accept or reject the proposal
+		fwdPropLP += nextTrace.newlogprob - math.log(len(currTrace.freeVarNames(structural, nonstructural)))
+		rvsPropLP += nextTrace.oldlogprob - math.log(len(nextTrace.freeVarNames(structural, nonstructural)))
+		acceptThresh = nextTrace.logprob - currTrace.logprob + rvsPropLP - fwdPropLP
+		if nextTrace.conditionsSatisfied and math.log(random.random()) < acceptThresh:
+			accepted = True
+			samp = retval
+		else:
+			nextTrace = currTrace
+	return samp, nextTrace, accepted
 
 def traceMH(computation, numsamps, lag=1, verbose=False):
 	"""
@@ -88,38 +139,10 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 	while i < iters:
 
 		i += 1
-
-		randVarRecord = tr.randomFreeVar()
-
-		# If we have no free random variables, then just run the computation
-		# and generate another sample (this may not actually be deterministic,
-		# in the case of nested query)
-		if randVarRecord == None:
-			currsamp = tr.traceUpdate(computation)
-		# Otherwise, make a proposal for a randomly-chosen variable
-		else:
-			name, var = randVarRecord
-			propval = var.erp._proposal(var.val, var.params)
-			fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
-			rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
-
-			# Copy the database, make the proposed change, and update the trace
-			currtrace = tr
-			proptrace = copy.deepcopy(tr)
-			vrec = proptrace.getRecord(name)
-			vrec.val = propval
-			vrec.logprob = vrec.erp._logprob(vrec.val, vrec.params)
-			retval = proptrace.traceUpdate(computation)
-
-			# Accept or reject the proposal
-			fwdPropLP += proptrace.newlogprob - math.log(currtrace.numVars())
-			rvsPropLP += proptrace.oldlogprob - math.log(proptrace.numVars())
-			acceptThresh = proptrace.logprob - currtrace.logprob + rvsPropLP - fwdPropLP
-			if proptrace.conditionsSatisfied and math.log(random.random()) < acceptThresh:
-				proposalsAccepted += 1
-				currsamp = retval
-				tr = proptrace
-			proposalsMade += 1
+		proposalsMade += 1
+		currsamp, tr, accepted = _mhstep(computation, currsamp, tr)
+		if accepted:
+			proposalsAccepted += 1
 
 		# Record the most recent sample
 		if i % lag == 0:
@@ -131,9 +154,51 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 	return samps
 
 
-def LARJMCMC(computation, numsamps, annealSteps=20, lag=1, verbose=False):
-	"""
-	Sample from a probabilistic computation using locally annealed
-	reversible jump mcmc
-	"""
-	pass
+# def LARJMCMC(computation, numsamps, annealSteps=20, lag=1, verbose=False):
+# 	"""
+# 	Sample from a probabilistic computation using locally annealed
+# 	reversible jump mcmc
+# 	"""
+	
+# 	# Analytics
+# 	jumpProposalsMade = 0
+# 	jumpProposalsAccepted = 0
+# 	annealingProposalsMade = 0
+# 	annealingProposalsAccepted = 0
+# 	diffusionProposalsMade = 0
+# 	diffusionProposalsAccepted = 0
+
+# 	# Run computation to get an initial trace
+# 	tr = None
+# 	currsamp = None
+# 	conditionsSatisfied = False
+# 	while not conditionsSatisfied:
+# 		tr = trace.newTrace()
+# 		currsamp = tr.traceUpdate(computation)
+# 		conditionsSatisfied = tr.conditionsSatisfied
+
+# 	# MH inference loop
+# 	samps = [(currsamp, tr.logprob)]
+# 	i = 0
+# 	iters = numsamps * lag
+# 	while i < iters:
+
+# 		i += 1
+
+# 		randVarRecord = tr.randomFreeVar()
+
+# 		# If we have no free random variables, then just run the computation
+# 		# and generate another sample (this may not actually be deterministic,
+# 		# in the case of nested query)
+# 		if randVarRecord == None:
+# 			currsamp = tr.traceUpdate(computation)
+# 		# Otherwise, make a proposal for a randomly-chosen variable
+# 		else:
+# 			name, var = randVarRecord
+# 			# If this is a non-structural variable, do normal diffusion
+# 			if not var.structural:
+# 				pass
+# 			# Otherwise, we need to execute a jump move
+# 			else:
+# 				pass
+
