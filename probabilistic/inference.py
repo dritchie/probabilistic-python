@@ -129,3 +129,11 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 		print "Acceptance ratio: {0}".format(float(proposalsAccepted)/proposalsMade)
 
 	return samps
+
+
+def LARJMCMC(computation, numsamps, annealSteps=20, lag=1, verbose=False):
+	"""
+	Sample from a probabilistic computation using locally annealed
+	reversible jump mcmc
+	"""
+	pass

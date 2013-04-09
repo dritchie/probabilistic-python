@@ -15,10 +15,10 @@ class RandomPrimitive:
 	def _sample_impl(self, params):
 		pass
 
-	def _sample(self, params, conditionedValue=None):
+	def _sample(self, params, isStructural, conditionedValue=None):
 		# Assumes _sample is called from __call__ in
 		# conrete subclasses
-		return trace.lookupVariableValue(self, params, 2, conditionedValue)
+		return trace.lookupVariableValue(self, params, isStructural, 2, conditionedValue)
 
 	def _logprob(self, val, params):
 		pass
@@ -44,8 +44,8 @@ class FlipRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, p=0.5, conditionedValue=None):
-		return self._sample([p], conditionedValue)
+	def __call__(self, p=0.5, isStructural=False, conditionedValue=None):
+		return self._sample([p], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		p = params[0]
@@ -76,8 +76,8 @@ class GaussianRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, mu, sigmaSq, conditionedValue=None):
-		return self._sample([mu,sigmaSq], conditionedValue)
+	def __call__(self, mu, sigmaSq, isStructural=False, conditionedValue=None):
+		return self._sample([mu,sigmaSq], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return random.gauss(params[0], params[1])
@@ -117,8 +117,8 @@ class GammaRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, a, b, conditionedValue=None):
-		return self._sample([a,b], conditionedValue)
+	def __call__(self, a, b, isStructural=False, conditionedValue=None):
+		return self._sample([a,b], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return random.gammavariate(params[0], params[1])
@@ -146,8 +146,8 @@ class BetaRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, a, b, conditionedValue=None):
-		return self._sample([a,b], conditionedValue)
+	def __call__(self, a, b, isStructural=False, conditionedValue=None):
+		return self._sample([a,b], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return random.betavariate(params[0], params[1])
@@ -216,8 +216,8 @@ class BinomialRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, p, n, conditionedValue=None):
-		return self._sample([p,n], conditionedValue)
+	def __call__(self, p, n, isStructural=False, conditionedValue=None):
+		return self._sample([p,n], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return binomial_sample(params[0], params[1])
@@ -279,8 +279,8 @@ class PoissonRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, mu, conditionedValue=None):
-		return self._sample([mu], conditionedValue)
+	def __call__(self, mu, isStructural=False, conditionedValue=None):
+		return self._sample([mu], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return poisson_sample(params[0])
@@ -317,8 +317,8 @@ class DirichletRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, alpha, conditionedValue=None):
-		return self._sample(alpha, conditionedValue)
+	def __call__(self, alpha, isStructural=False, conditionedValue=None):
+		return self._sample(alpha, isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return dirichlet_sample(params)
@@ -353,8 +353,8 @@ class MultinomialRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, theta, conditionedValue=None):
-		return self._sample(theta, conditionedValue)
+	def __call__(self, theta, isStructural=False, conditionedValue=None):
+		return self._sample(theta, isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return multinomial_sample(params)
@@ -373,8 +373,8 @@ class UniformRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, lo, hi, conditionedValue=None):
-		return self._sample([lo, hi], conditionedValue)
+	def __call__(self, lo, hi, isStructural=False, conditionedValue=None):
+		return self._sample([lo, hi], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return random.uniform(params[0], params[1])
@@ -408,9 +408,9 @@ uniform = UniformRandomPrimitive()
 Random utilies built on top of ERPs
 """
 
-def multinomialDraw(items, probs):
-	return items[multinomial(probs)]
+def multinomialDraw(items, probs, isStructural=False):
+	return items[multinomial(probs, isStructural=isStructural)]
 
-def uniformDraw(items):
+def uniformDraw(items, isStructural=False):
 	n = len(items)
-	return items[multinomial(map(lambda x: 1.0/n, range(n)))]
+	return items[multinomial(map(lambda x: 1.0/n, range(n)), isStructural=isStructural)]

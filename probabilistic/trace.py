@@ -9,16 +9,17 @@ class RandomVariableRecord:
 	These form the 'choice points' in a probabilistic program trace.
 	"""
 
-	def __init__(self, erp, params, val, logprob, conditioned=False):
+	def __init__(self, erp, params, val, logprob, structural, conditioned=False):
 		self.erp = erp
 		self.params = params
 		self.val = val
 		self.logprob = logprob
 		self.active = True
 		self.conditioned = conditioned
+		self.structural = structural
 
 	def __deepcopy__(self, memo):
-		return RandomVariableRecord(self.erp, self.params[:], self.val, self.logprob, self.conditioned)
+		return RandomVariableRecord(self.erp, self.params[:], self.val, self.logprob, self.structural, self.conditioned)
 
 class RandomExecutionTrace:
 	"""
@@ -130,7 +131,7 @@ class RandomExecutionTrace:
 			f = f.f_back
 		self.loopcounters[id(f)] += 1
 
-	def lookup(self, name, erp, params, conditionedValue=None):
+	def lookup(self, name, erp, params, isStructural, conditionedValue=None):
 		"""
 		Looks up the value of a random variable.
 		If this random variable does not exist, create it
@@ -138,6 +139,7 @@ class RandomExecutionTrace:
 
 		record = self._vars.get(name)
 		if (record == None or record.erp != erp or
+			isStructural != record.structural or
 			(conditionedValue != None and conditionedValue != record.val)):
 			# Create new variable
 			val = None
@@ -147,7 +149,7 @@ class RandomExecutionTrace:
 				val = conditionedValue
 			ll = erp._logprob(val, params)
 			self.newlogprob += ll
-			record = RandomVariableRecord(erp, params, val, ll, conditionedValue != None)
+			record = RandomVariableRecord(erp, params, val, ll, isStructural, conditionedValue != None)
 			self._vars[name] = record
 		else:
 			# Reuse existing variable
@@ -181,7 +183,7 @@ Global singleton instance
 """
 _trace = None
 
-def lookupVariableValue(erp, params, numFrameSkip, conditionedValue=None):
+def lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValue=None):
 	global _trace
 	if _trace == None:
 		if conditionedValue == None:
@@ -190,7 +192,7 @@ def lookupVariableValue(erp, params, numFrameSkip, conditionedValue=None):
 			return conditionedValue
 	else:
 		name = _trace.currentName(numFrameSkip+1)
-		return _trace.lookup(name, erp, params, conditionedValue)
+		return _trace.lookup(name, erp, params, isStructural, conditionedValue)
 
 def incrementLoopCounter(numFrameSkip):
 	global _trace
