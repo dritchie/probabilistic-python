@@ -50,6 +50,19 @@ class RandomExecutionTrace:
 				   					  ((structural and tup[1].structural) or (nonstructural and not tup[1].structural)), \
 						  self._vars.iteritems()))
 
+	def rejectionInitialize(self, computation):
+		"""
+		Initialize this trace by running computation
+		until all conditions are satisfied.
+		Returns the return value of the computation.
+		"""
+		self.conditionsSatisfied = False
+		retval = None
+		while not self.conditionsSatisfied:
+			self._vars.clear()
+			retval = self.traceUpdate(computation)
+		return retval
+
 	def traceUpdate(self, computation):
 		"""
 		Run computation and update this database accordingly

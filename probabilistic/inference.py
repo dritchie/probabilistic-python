@@ -19,6 +19,7 @@ def distrib(computation, sampler, *samplerArgs):
 		hist[s] /= flnumsamps
 	return hist
 
+
 def expectation(computation, sampler, *samplerArgs):
 	"""
 	Compute the expected value of a computation.
@@ -26,6 +27,7 @@ def expectation(computation, sampler, *samplerArgs):
 	"""
 	samps = sampler(computation, *samplerArgs)
 	return mean(map(lambda s: s[0], samps))
+
 
 def mean(values):
 	"""
@@ -35,6 +37,7 @@ def mean(values):
 	for v in values[1:]:
 		mean += v
 	return mean / float(len(values))
+
 
 def MAP(computation, sampler, *samplerArgs):
 	"""
@@ -50,15 +53,9 @@ def rejectionSample(computation):
 	Rejection sample a result from computation that satsifies
 	all conditioning expressions.
 	"""
+	tr = trace.newTrace()
+	return tr.rejectionInitialize(computation)
 
-	samp = None
-	conditionsSatisfied = False
-	while not conditionsSatisfied:
-		tr = trace.newTrace()
-		samp = tr.traceUpdate(computation)
-		conditionsSatisfied = tr.conditionsSatisfied
-
-	return samp
 
 def _randomChoice(items):
 	"""
@@ -68,6 +65,7 @@ def _randomChoice(items):
 		return None
 	else:
 		return random.choice(items)
+
 
 def _mhstep(computation, currSamp, currTrace, structural=True, nonstructural=True):
 	"""
@@ -112,6 +110,7 @@ def _mhstep(computation, currSamp, currTrace, structural=True, nonstructural=Tru
 			nextTrace = currTrace
 	return samp, nextTrace, accepted
 
+
 def traceMH(computation, numsamps, lag=1, verbose=False):
 	"""
 	Sample from a probabilistic computation for some
@@ -124,13 +123,8 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 	proposalsAccepted = 0
 
 	# Run computation to get an initial trace
-	tr = None
-	currsamp = None
-	conditionsSatisfied = False
-	while not conditionsSatisfied:
-		tr = trace.newTrace()
-		currsamp = tr.traceUpdate(computation)
-		conditionsSatisfied = tr.conditionsSatisfied
+	tr = trace.newTrace()
+	currsamp = tr.rejectionInitialize(computation)
 
 	# MH inference loop
 	samps = [(currsamp, tr.logprob)]
@@ -169,13 +163,8 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 # 	diffusionProposalsAccepted = 0
 
 # 	# Run computation to get an initial trace
-# 	tr = None
-# 	currsamp = None
-# 	conditionsSatisfied = False
-# 	while not conditionsSatisfied:
-# 		tr = trace.newTrace()
-# 		currsamp = tr.traceUpdate(computation)
-# 		conditionsSatisfied = tr.conditionsSatisfied
+# 	tr = trace.newTrace()
+# 	currsamp = tr.rejectionInitialize(computation)
 
 # 	# MH inference loop
 # 	samps = [(currsamp, tr.logprob)]
