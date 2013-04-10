@@ -16,7 +16,7 @@ def softEq(a, b, tolerance):
 """
 Inference procedures
 """
-from inference import distrib, expectation, MAP, rejectionSample, traceMH
+from inference import distrib, expectation, MAP, rejectionSample, traceMH, LARJMCMC
 
 
 """

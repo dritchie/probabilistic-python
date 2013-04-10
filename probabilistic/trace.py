@@ -50,6 +50,19 @@ class RandomExecutionTrace:
 				   					  ((structural and tup[1].structural) or (nonstructural and not tup[1].structural)), \
 						  self._vars.iteritems()))
 
+	def varDiff(self, other):
+		"""
+		The names of the variables that this trace has that the other trace does not have
+		"""
+		return list(set(self._vars.keys()) - set(other._vars.keys()))
+
+	def lpDiff(self, other):
+		"""
+		The difference in log probability between this trace and the other resulting
+		from the variables that this has that the other does not
+		"""
+		return sum(map(lambda name: self._vars[name].logprob, self.varDiff(other)))
+
 	def rejectionInitialize(self, computation):
 		"""
 		Initialize this trace by running computation

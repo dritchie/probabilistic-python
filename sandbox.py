@@ -193,8 +193,8 @@ def stringsOfLength(length, numvals):
 		yield tup
 
 def constrainedStringA():
-	numelems = stringLengths[multinomial(stringLengthProbs)]
-	seq = repeat(numelems, lambda x: int(flip(0.5)))
+	numelems = multinomialDraw(stringLengths, stringLengthProbs, isStructural=True)
+	seq = repeat(numelems, lambda: int(flip(0.5)))
 	if numelems % 2 == 0:
 		factor(-penaltyMultiplier * len(filter(lambda num: num == 1, seq)))
 	else:
@@ -224,8 +224,8 @@ def constrainedStringATrueDist():
 
 def constrainedStringB():
 	onethird = 1.0/3
-	numelems = stringLengths[multinomial(stringLengthProbs)]
-	seq = repeat(numelems, lambda x: multinomial([onethird, onethird, onethird]))
+	numelems = multinomialDraw(stringLengths, stringLengthProbs, isStructural=True)
+	seq = repeat(numelems, lambda: multinomial([onethird, onethird, onethird]))
 	numIdenticalConsec = 0
 	for i in xrange(numelems-1):
 		numIdenticalConsec += (seq[i] == seq[i+1])
@@ -302,8 +302,8 @@ if __name__ == "__main__":
 	# print distrib(constrainedStringA, traceMH, 10000)
 	# print "-------------------------------------------"
 	# print constrainedStringATrueDist()
-	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000))
-	print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 10000))
-	# print klDivergence(distrib(constrainedStringA, traceMH, 10000), constrainedStringATrueDist())
-	# print klDivergence(distrib(constrainedStringB, traceMH, 10000), constrainedStringBTrueDist())
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000, 1, True))
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMCMC, 2000, 40, 1, True))
+	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 10000, 1, True))
+	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMCMC, 2000, 40, 1, True))
 	
