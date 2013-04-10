@@ -22,7 +22,8 @@ def test(name, estimates, trueExpectation, tolerance=errorTolerance):
 		print "passed."
 
 def mhtest(name, computation, trueExpectation, tolerance=errorTolerance):
-	test(name, repeat(runs, lambda: expectation(computation, traceMH, samples, lag)), trueExpectation, tolerance)
+	#test(name, repeat(runs, lambda: expectation(computation, traceMH, samples, lag)), trueExpectation, tolerance)
+	test(name, repeat(runs, lambda: expectation(computation, LARJMCMC, samples, 0, lag)), trueExpectation, tolerance)
 
 
 if __name__ == "__main__":
@@ -124,7 +125,7 @@ if __name__ == "__main__":
 
 	def recursiveStochasticTest():
 		def powerLaw(prob, x):
-			if flip(prob):
+			if flip(prob, isStructural=True):
 				return x
 			else:
 				return powerLaw(prob, x+1)
@@ -192,7 +193,7 @@ if __name__ == "__main__":
 
 
 	def transDimensionalTest():
-		a = beta(1, 5) if flip(0.9) else 0.7
+		a = beta(1, 5) if flip(0.9, isStructural=True) else 0.7
 		b = flip(a)
 		condition(b)
 		return a

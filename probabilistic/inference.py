@@ -180,10 +180,11 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 		structVars = newStructTrace.freeVarNames(nonstructural=False)
 		name = _randomChoice(structVars)
 		var = newStructTrace.getRecord(name)
+		origval = var.val
 		propval = var.erp._proposal(var.val, var.params)
 		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
-		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
 		var.val = propval
+		var.logprob = var.erp._logprob(var.val, var.params)
 		retval = newStructTrace.traceUpdate(computation)
 		oldNumVars = len(structVars)
 		newNumVars = len(newStructTrace.freeVarNames(nonstructural=False))
@@ -194,8 +195,10 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 		annealingLpRatio = 0.0
 		lastAnnealingSamp = retval
 
-		# We only actually do annealing if we have any non-structural variables
-		if len(oldStructTrace.freeVarNames(structural=False)) + len(newStructTrace.freeVarNames(structural=False)) != 0:
+		# We only actually do annealing if we have any non-structural variables and we're doing more than
+		# zero annealing steps
+		if len(oldStructTrace.freeVarNames(structural=False)) + len(newStructTrace.freeVarNames(structural=False)) != 0  and \
+		   annealSteps > 0:
 
 			def annealingStep(alpha):
 
@@ -221,9 +224,11 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 				retval = lastAnnealingSamp
 				if oldVar:
 					oldVar.val = propval
+					oldVar.logprob = oldVar.erp._logprob(oldVar.val, oldVar.params)
 					nextOldStructTrace.traceUpdate(computation)
 				if newVar:
 					newVar.val = propval
+					newVar.logprob = newVar.erp._logprob(newVar.val, newVar.params)
 					retval = nextNewStructTrace.traceUpdate(computation)
 
 				# Accept/reject this annealing move
@@ -249,7 +254,7 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 				aStep += 1
 
 		# Finalize the acceptance criterion and choose whether to accept
-		rvsPropLP += oldStructTrace.lpDiff(newStructTrace) - math.log(newNumVars)
+		rvsPropLP = var.erp._logProposalProb(propval, origval, var.params) + oldStructTrace.lpDiff(newStructTrace) - math.log(newNumVars)
 		acceptanceProb = newStructTrace.logprob - tr.logprob + rvsPropLP - fwdPropLP + annealingLpRatio
 		if newStructTrace.conditionsSatisfied and math.log(random.random()) < acceptanceProb:
 			nextTrace = newStructTrace
@@ -301,8 +306,9 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 																 diffusionProposalsAccepted, diffusionProposalsMade)
 		print "Jump acceptance ratio: {0} ({1}/{2})".format(float(jumpProposalsAccepted)/jumpProposalsMade, \
 															jumpProposalsAccepted, jumpProposalsMade)
-		print "Annealing acceptance ratio: {0} ({1}/{2})".format(float(annealingProposalsAccepted[0])/annealingProposalsMade[0], \
-																 annealingProposalsAccepted[0], annealingProposalsMade[0])
+		if annealingProposalsMade[0] > 0:
+			print "Annealing acceptance ratio: {0} ({1}/{2})".format(float(annealingProposalsAccepted[0])/annealingProposalsMade[0], \
+																	 annealingProposalsAccepted[0], annealingProposalsMade[0])
 		print "Overall acceptance ratio: {0} ({1}/{2})".format(float(overallProposalsAccepted)/overallProposalsMade, \
 													 		   overallProposalsAccepted, overallProposalsMade)
 

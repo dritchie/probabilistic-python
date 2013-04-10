@@ -178,7 +178,7 @@ def sprinklerTest():
 # stringLengthProbs = [1.0/25, 2.0/25, 3.0/25, 4.0/25, 5.0/25, 4.0/25, 3.0/25, 2.0/25, 1.0/25]
 # stringLengths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 stringLengthProbs = [0.5, 0.5]
-stringLengths = [4, 5]
+stringLengths = [2, 3]
 penaltyMultiplier = 10
 
 def stringsOfLength(length, numvals):
@@ -302,8 +302,8 @@ if __name__ == "__main__":
 	# print distrib(constrainedStringA, traceMH, 10000)
 	# print "-------------------------------------------"
 	# print constrainedStringATrueDist()
-	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000, 1, True))
-	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMCMC, 2000, 40, 1, True))
+	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000, 1, True))
+	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMCMC, 10000, 0, 1, True))
 	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 10000, 1, True))
 	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMCMC, 2000, 40, 1, True))
 	
