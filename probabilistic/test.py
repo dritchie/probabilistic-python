@@ -22,8 +22,8 @@ def test(name, estimates, trueExpectation, tolerance=errorTolerance):
 		print "passed."
 
 def mhtest(name, computation, trueExpectation, tolerance=errorTolerance):
-	#test(name, repeat(runs, lambda: expectation(computation, traceMH, samples, lag)), trueExpectation, tolerance)
-	test(name, repeat(runs, lambda: expectation(computation, LARJMCMC, samples, 0, lag)), trueExpectation, tolerance)
+	test(name, repeat(runs, lambda: expectation(computation, traceMH, samples, lag)), trueExpectation, tolerance)
+	# test(name, repeat(runs, lambda: expectation(computation, LARJMCMC, samples, 0, lag)), trueExpectation, tolerance)
 
 
 if __name__ == "__main__":

@@ -302,8 +302,8 @@ if __name__ == "__main__":
 	# print distrib(constrainedStringA, traceMH, 10000)
 	# print "-------------------------------------------"
 	# print constrainedStringATrueDist()
-	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000, 1, True))
-	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMCMC, 10000, 0, 1, True))
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 10000, 1, True))
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMCMC, 5000, 20, 1, True))
 	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 10000, 1, True))
-	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMCMC, 2000, 40, 1, True))
+	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMCMC, 10000, 0, 1, True))
 	

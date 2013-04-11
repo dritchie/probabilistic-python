@@ -1,6 +1,7 @@
 import random
 import trace
 import math
+import copy
 
 """
 A bunch of sampling/pdf code adapted from jschurch:
@@ -65,7 +66,10 @@ class FlipRandomPrimitive(RandomPrimitive):
 		return 0.0 		# There's only one way to flip a binary variable
 
 
-def gaussian_logprob(x, mu, sigmaSq):
+def gaussian_logprob(x, mu, sigma):
+	return -.5*(1.8378770664093453 + 2*math.log(sigma) + (x - mu)*(x - mu)/(sigma*sigma))
+
+def gaussian_logprob_sigmaSq(x, mu, sigmaSq):
 	return -.5*(1.8378770664093453 + math.log(sigmaSq) + (x - mu)*(x - mu)/sigmaSq)
 
 class GaussianRandomPrimitive(RandomPrimitive):
@@ -76,8 +80,8 @@ class GaussianRandomPrimitive(RandomPrimitive):
 	def __init__(self):
 		pass
 
-	def __call__(self, mu, sigmaSq, isStructural=False, conditionedValue=None):
-		return self._sample([mu,sigmaSq], isStructural, conditionedValue)
+	def __call__(self, mu, sigma, isStructural=False, conditionedValue=None):
+		return self._sample([mu,sigma], isStructural, conditionedValue)
 
 	def _sample_impl(self, params):
 		return random.gauss(params[0], params[1])
@@ -87,11 +91,11 @@ class GaussianRandomPrimitive(RandomPrimitive):
 
 	# Drift kernel
 	def _proposal(self, currval, params):
-		return random.gauss(currval, params[1]/2.0)
+		return random.gauss(currval, params[1])
 
 	# Drift kernel
 	def _logProposalProb(self, currval, propval, params):
-		return gaussian_logprob(propval, currval, params[1]/2.0)
+		return gaussian_logprob(propval, currval, params[1])
 
 
 gamma_cof = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5]
@@ -125,10 +129,9 @@ class GammaRandomPrimitive(RandomPrimitive):
 
 	def _logprob(self, val, params):
 		return gamma_logprob(val, params[0], params[1])
+	
 
 	# TODO: Custom proposal kernel?
-
-
 def log_beta(a, b):
 	return log_gamma(a) + log_gamma(b) - log_gamma(a+b)
 
@@ -156,7 +159,6 @@ class BetaRandomPrimitive(RandomPrimitive):
 		return beta_logprob(val, params[0], params[1])
 
 	# TODO: Custom proposal kernel?
-
 
 def binomial_sample(p, n):
 	k = 0
@@ -227,7 +229,6 @@ class BinomialRandomPrimitive(RandomPrimitive):
 
 	# TODO: Custom proposal kernel?
 
-
 def poisson_sample(mu):
 	k = 0
 	while mu > 10:
@@ -290,7 +291,6 @@ class PoissonRandomPrimitive(RandomPrimitive):
 
 	# TODO: Custom proposal kernel?
 
-
 def dirichlet_sample(alpha):
 	ssum = 0
 	theta = []
@@ -331,7 +331,7 @@ class DirichletRandomPrimitive(RandomPrimitive):
 
 def multinomial_sample(theta):
 	result = 0
-	x = random.random()
+	x = random.random() * sum(theta)
 	probAccum = 1e-6
 	k = len(theta)
 	while result < k and x > probAccum:
@@ -343,7 +343,7 @@ def multinomial_logprob(n, theta):
 	if n < 0 or n >= len(theta):
 		return -float('inf')
 	n = int(round(n))
-	return math.log(theta[n])
+	return math.log(theta[n]/sum(theta))
 
 class MultinomialRandomPrimitive(RandomPrimitive):
 	"""
@@ -362,7 +362,17 @@ class MultinomialRandomPrimitive(RandomPrimitive):
 	def _logprob(self, val, params):
 		return multinomial_logprob(val, params)
 
-	# TODO: Custom proposal kernel?
+	# Multinomial with currval projected out
+	def _proposal(self, currval, params):
+		newparams = copy.copy(params)
+		newparams[currval] = 0.0
+		return multinomial_sample(newparams)
+
+	# Multinomial with currval projected out
+	def _logProposalProb(self, currval, propval, params):
+		newparams = copy.copy(params)
+		newparams[currval] = 0.0
+		return multinomial_logprob(propval, newparams)
 
 
 class UniformRandomPrimitive(RandomPrimitive):
