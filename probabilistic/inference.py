@@ -148,7 +148,7 @@ def traceMH(computation, numsamps, lag=1, verbose=False):
 	return samps
 
 
-def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
+def LARJMCMC(computation, numsamps, annealSteps=40, jumpFreq=None, lag=1, verbose=False):
 	"""
 	Sample from a probabilistic computation using locally annealed
 	reversible jump mcmc
@@ -171,7 +171,7 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 		# Prepare return values
 		nextTrace = tr
 		samp = currsamp
-		accepted = False
+		jaccepted = False
 
 		oldStructTrace = copy.deepcopy(tr)
 		newStructTrace = copy.deepcopy(tr)
@@ -206,7 +206,7 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 				nextOldStructTrace = copy.deepcopy(oldStructTrace)
 				nextNewStructTrace = copy.deepcopy(newStructTrace)
 				samp = lastAnnealingSamp
-				accepted = False
+				naccepted = False
 
 				# Pick random non-structural variable uniformly over all non-structurals in both
 				# the old and the new structures
@@ -237,19 +237,20 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 				if nextOldStructTrace.conditionsSatisfied and nextNewStructTrace.conditionsSatisfied and \
 				   math.log(random.random()) < acceptThresh:
 					samp = retval
-					accepted = True
+					naccepted = True
 				else:
 					nextOldStructTrace = oldStructTrace
 					nextNewStructTrace = newStructTrace
-				return samp, nextOldStructTrace, nextNewStructTrace, accepted
+				return samp, nextOldStructTrace, nextNewStructTrace, naccepted
 
 			while aStep < annealSteps:
 				alpha = float(aStep)/(annealSteps-1)
 				annealingLpRatio += (1-alpha)*oldStructTrace.logprob + alpha*newStructTrace.logprob
-				lastAnnealingSamp, oldStructTrace, newStructTrace, accepted = annealingStep(alpha)
+				saccepted = False
+				lastAnnealingSamp, oldStructTrace, newStructTrace, saccepted = annealingStep(alpha)
 				annealingLpRatio -= (1-alpha)*oldStructTrace.logprob + alpha*newStructTrace.logprob
 				annealingProposalsMade[0] += 1
-				if accepted:
+				if saccepted:
 					annealingProposalsAccepted[0] += 1
 				aStep += 1
 
@@ -258,9 +259,9 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 		acceptanceProb = newStructTrace.logprob - tr.logprob + rvsPropLP - fwdPropLP + annealingLpRatio
 		if newStructTrace.conditionsSatisfied and math.log(random.random()) < acceptanceProb:
 			nextTrace = newStructTrace
-			accepted = True
+			jaccepted = True
 			samp = lastAnnealingSamp
-		return samp, nextTrace, accepted
+		return samp, nextTrace, jaccepted
 
 	# Outer MH inference loop
 	samps = [(currsamp, tr.logprob)]
@@ -279,9 +280,8 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 		if numStruct + numNonStruct == 0:
 			currsamp = tr.traceUpdate(computation)
 		# Otherwise, choose whether to modify a structural or nonstructural variable
-		# (Mathematically equivalent to randomly sampling from the full set of variables)
 		else:
-			structChoiceProb = float(numStruct)/(numStruct + numNonStruct)
+			structChoiceProb = (jumpFreq if jumpFreq else float(numStruct)/(numStruct + numNonStruct))
 			if random.random() < structChoiceProb:
 				# Make a structural proposal
 				jumpProposalsMade += 1
@@ -302,10 +302,12 @@ def LARJMCMC(computation, numsamps, annealSteps=40, lag=1, verbose=False):
 	overallProposalsMade = jumpProposalsMade + diffusionProposalsMade
 	overallProposalsAccepted = jumpProposalsAccepted + diffusionProposalsAccepted
 	if verbose:
-		print "Diffusion acceptance ratio: {0} ({1}/{2})".format(float(diffusionProposalsAccepted)/diffusionProposalsMade, \
-																 diffusionProposalsAccepted, diffusionProposalsMade)
-		print "Jump acceptance ratio: {0} ({1}/{2})".format(float(jumpProposalsAccepted)/jumpProposalsMade, \
-															jumpProposalsAccepted, jumpProposalsMade)
+		if diffusionProposalsMade > 0:
+			print "Diffusion acceptance ratio: {0} ({1}/{2})".format(float(diffusionProposalsAccepted)/diffusionProposalsMade, \
+																	 diffusionProposalsAccepted, diffusionProposalsMade)
+		if jumpProposalsMade > 0:
+			print "Jump acceptance ratio: {0} ({1}/{2})".format(float(jumpProposalsAccepted)/jumpProposalsMade, \
+																jumpProposalsAccepted, jumpProposalsMade)
 		if annealingProposalsMade[0] > 0:
 			print "Annealing acceptance ratio: {0} ({1}/{2})".format(float(annealingProposalsAccepted[0])/annealingProposalsMade[0], \
 																	 annealingProposalsAccepted[0], annealingProposalsMade[0])
