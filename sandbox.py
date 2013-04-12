@@ -175,10 +175,10 @@ def sprinklerTest():
 # )
 # (hist sprinklerTest "Rained on Day2?")
 
-stringLengthProbs = repeat(6, lambda: 1.0)
-stringLengths = range(5, 11)
-# stringLengthProbs = [0.5, 0.5]
-# stringLengths = [2, 3]
+# stringLengthProbs = repeat(6, lambda: 1.0)
+# stringLengths = range(5, 11)
+stringLengthProbs = [0.5, 0.5]
+stringLengths = [3, 4]
 penaltyMultiplier = 5
 
 def stringsOfLength(length, numvals):
@@ -302,8 +302,8 @@ if __name__ == "__main__":
 	# print distrib(constrainedStringA, traceMH, 10000)
 	# print "-------------------------------------------"
 	# print constrainedStringATrueDist()
-	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 16000, 1, True))
-	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMCMC, 800, 20, 1.0, 1, True))
-	print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 16000, 1, True))
-	print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMCMC, 800, 20, 1.0, 1, True))
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 1000, 1, True))
+	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMH, 1000, 20, None, 1, True))
+	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 1000, 1, True))
+	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMH, 1000, 10, None, 1, True))
 	

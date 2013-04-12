@@ -26,22 +26,29 @@ class RandomExecutionTrace:
 	Tracks the random choices made and accumulates probabilities
 	"""
 
-	def __init__(self):
+	def __init__(self, computation, doRejectionInit=True):
+		self.computation = computation
 		self._vars = {}
 		self.logprob = 0
 		self.newlogprob = 0		# From newly-added variables
 		self.oldlogprob = 0		# From unreachable variables
 		self.rootframe = None
 		self.loopcounters = Counter()
-		self.conditionsSatisfied = True
+		self.conditionsSatisfied = False
+		self.returnValue = None
+		if doRejectionInit:
+			while not self.conditionsSatisfied:
+				self._vars.clear()
+				self.traceUpdate()
 
 	def __deepcopy__(self, memo):
-		newdb = RandomExecutionTrace()
+		newdb = RandomExecutionTrace(self.computation, doRejectionInit=False)
 		newdb.logprob = self.logprob
 		newdb.oldlogprob = self.oldlogprob
 		newdb.newlogprob = self.newlogprob
 		newdb._vars = copy.deepcopy(self._vars, memo)
 		newdb.conditionsSatisfied = self.conditionsSatisfied
+		newdb.returnValue = self.returnValue
 		return newdb
 
 	def freeVarNames(self, structural=True, nonstructural=True):
@@ -63,22 +70,9 @@ class RandomExecutionTrace:
 		"""
 		return sum(map(lambda name: self._vars[name].logprob, self.varDiff(other)))
 
-	def rejectionInitialize(self, computation):
+	def traceUpdate(self):
 		"""
-		Initialize this trace by running computation
-		until all conditions are satisfied.
-		Returns the return value of the computation.
-		"""
-		self.conditionsSatisfied = False
-		retval = None
-		while not self.conditionsSatisfied:
-			self._vars.clear()
-			retval = self.traceUpdate(computation)
-		return retval
-
-	def traceUpdate(self, computation):
-		"""
-		Run computation and update this database accordingly
+		Run computation and update this trace accordingly
 		"""
 
 		global _trace
@@ -99,7 +93,7 @@ class RandomExecutionTrace:
 		self.rootframe = inspect.currentframe()
 
 		# Run the computation, which will create/lookup random variables
-		retval = computation()
+		self.returnValue = self.computation()
 
 		# CLear out the root frame, etc.
 		self.rootframe = None
@@ -114,7 +108,23 @@ class RandomExecutionTrace:
 
 		_trace = originalTrace
 
-		return retval
+	def proposeChange(self, varname):
+		"""
+		Propose a random change to the variable name 'varname'
+		Returns a new sample trace from the computation and the
+			forward and reverse probabilities of proposing this change
+		"""
+		nextTrace = copy.deepcopy(self)
+		var = nextTrace.getRecord(varname)
+		propval = var.erp._proposal(var.val, var.params)
+		fwdPropLP = var.erp._logProposalProb(var.val, propval, var.params)
+		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
+		var.val = propval
+		var.logprob = var.erp._logprob(var.val, var.params)
+		nextTrace.traceUpdate()
+		fwdPropLP += nextTrace.newlogprob
+		rvsPropLP += nextTrace.oldlogprob
+		return nextTrace, fwdPropLP, rvsPropLP
 
 	def currentName(self, numFrameSkip):
 		"""
@@ -216,8 +226,8 @@ def incrementLoopCounter(numFrameSkip):
 	if _trace != None:
 		_trace.incrementLoopCounter(numFrameSkip+1)
 
-def newTrace():
-	return RandomExecutionTrace()
+def newTrace(computation):
+	return RandomExecutionTrace(computation)
 
 def factor(num):
 	global _trace
