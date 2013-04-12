@@ -132,12 +132,10 @@ class RandomExecutionTrace:
 		"""
 		numFrameSkip += 1	# Skip this frame, obviously
 		f = inspect.currentframe()
-		i = 0
-		while i < numFrameSkip:
-			i += 1
+		for i in xrange(numFrameSkip):
 			f = f.f_back
 		name = ""
-		while f != None and f != self.rootframe:
+		while f and f is not self.rootframe:
 			name = "{0}:{1}:{2}:{3}|".format(id(f.f_code), self.loopcounters[id(f)], f.f_lineno, f.f_lasti) + name
 			f = f.f_back
 		return name
@@ -149,9 +147,7 @@ class RandomExecutionTrace:
 		"""
 		numFrameSkip += 1	# Skip this frame, obviously
 		f = inspect.currentframe()
-		i = 0
-		while i < numFrameSkip:
-			i += 1
+		for i in xrange(numFrameSkip):
 			f = f.f_back
 		self.loopcounters[id(f)] += 1
 
@@ -162,9 +158,9 @@ class RandomExecutionTrace:
 		"""
 
 		record = self._vars.get(name)
-		if (record == None or record.erp != erp or
+		if (not record or record.erp is not erp or
 			isStructural != record.structural or
-			(conditionedValue != None and conditionedValue != record.val)):
+			(conditionedValue and conditionedValue != record.val)):
 			# Create new variable
 			val = None
 			if conditionedValue == None:
@@ -209,18 +205,15 @@ _trace = None
 
 def lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValue=None):
 	global _trace
-	if _trace == None:
-		if conditionedValue == None:
-			return erp._sample_impl(params)
-		else:
-			return conditionedValue
+	if not _trace:
+		return (conditionedValue if conditionedValue else erp._sample_impl(params))
 	else:
 		name = _trace.currentName(numFrameSkip+1)
 		return _trace.lookup(name, erp, params, isStructural, conditionedValue)
 
 def incrementLoopCounter(numFrameSkip):
 	global _trace
-	if _trace != None:
+	if _trace:
 		_trace.incrementLoopCounter(numFrameSkip+1)
 
 def newTrace(computation):
@@ -228,10 +221,10 @@ def newTrace(computation):
 
 def factor(num):
 	global _trace
-	if _trace != None:
+	if _trace:
 		_trace.addFactor(num)
 
 def condition(boolexpr):
 	global _trace
-	if _trace != None:
+	if _trace:
 		_trace.conditionOn(boolexpr)
