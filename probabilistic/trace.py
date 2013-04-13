@@ -1,4 +1,4 @@
-import inspect
+import sys
 import copy
 from collections import Counter
 
@@ -87,7 +87,7 @@ class RandomExecutionTrace:
 			record.active = False
 
 		# Mark that this is the 'root' of the current execution trace
-		self.rootframe = inspect.currentframe()
+		self.rootframe = sys._getframe()
 
 		# Run the computation, which will create/lookup random variables
 		self.returnValue = self.computation()
@@ -130,11 +130,8 @@ class RandomExecutionTrace:
 		Skips the top 'numFrameSkip' stack frames that precede this
 			function's stack frame (numFrameSkip+1 frames total)
 		"""
-		numFrameSkip += 1	# Skip this frame, obviously
-		f = inspect.currentframe()
-		for i in xrange(numFrameSkip):
-			f = f.f_back
 		name = ""
+		f = sys._getframe(numFrameSkip+1)	# Skip this frame, obviously
 		while f and f is not self.rootframe:
 			name = "{0}:{1}:{2}:{3}|".format(id(f.f_code), self.loopcounters[id(f)], f.f_lineno, f.f_lasti) + name
 			f = f.f_back
@@ -145,11 +142,7 @@ class RandomExecutionTrace:
 		Increment the loop counter associated with the frame that is numFrameSkip
 		frames from the top of the stack
 		"""
-		numFrameSkip += 1	# Skip this frame, obviously
-		f = inspect.currentframe()
-		for i in xrange(numFrameSkip):
-			f = f.f_back
-		self.loopcounters[id(f)] += 1
+		self.loopcounters[id(sys._getframe(numFrameSkip+1))] += 1
 
 	def lookup(self, name, erp, params, isStructural, conditionedValue=None):
 		"""
