@@ -162,11 +162,7 @@ class RandomExecutionTrace:
 			isStructural != record.structural or
 			(conditionedValue and conditionedValue != record.val)):
 			# Create new variable
-			val = None
-			if conditionedValue == None:
-				val = erp._sample_impl(params)
-			else:
-				val = conditionedValue
+			val = (conditionedValue if conditionedValue else erp._sample_impl(params))
 			ll = erp._logprob(val, params)
 			self.newlogprob += ll
 			record = RandomVariableRecord(erp, params, val, ll, isStructural, conditionedValue != None)

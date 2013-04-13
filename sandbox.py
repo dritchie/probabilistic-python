@@ -1,6 +1,8 @@
 from probabilistic import *
 import math
 from collections import Counter
+import cProfile
+import pstats
 
 ###############################
 
@@ -302,8 +304,12 @@ if __name__ == "__main__":
 	# print distrib(constrainedStringA, traceMH, 10000)
 	# print "-------------------------------------------"
 	# print constrainedStringATrueDist()
-	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 1000, 1, True))
-	print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMH, 1000, 20, None, 1, True))
+	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, traceMH, 1000, 1, True))
+	# print totalVariationDist(constrainedStringATrueDist(), distrib(constrainedStringA, LARJMH, 1000, 20, None, 1, True))
 	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, traceMH, 1000, 1, True))
 	# print totalVariationDist(constrainedStringBTrueDist(), distrib(constrainedStringB, LARJMH, 1000, 10, None, 1, True))
+	cProfile.run('distrib(constrainedStringA, LARJMH, 1000, 20)', 'prof')
+	p = pstats.Stats('prof')
+	p.strip_dirs().sort_stats('cumulative').print_stats(10)
+	p.strip_dirs().sort_stats('time').print_stats(10)
 	
