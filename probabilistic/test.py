@@ -278,6 +278,15 @@ if __name__ == "__main__":
 	"""
 
 
+	def nativeLoopTest():
+		accum  = 0
+		for i in xrange(10):
+			accum += flip()
+		return accum / 10.0
+	mhtest("native for loop", \
+			nativeLoopTest, \
+			0.5)
+
 	def ntimesTest():
 		accum = [0]
 		def block(i):

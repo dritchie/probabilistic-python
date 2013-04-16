@@ -130,19 +130,29 @@ class RandomExecutionTrace:
 		Skips the top 'numFrameSkip' stack frames that precede this
 			function's stack frame (numFrameSkip+1 frames total)
 		"""
-		name = ""
-		f = sys._getframe(numFrameSkip+1)	# Skip this frame, obviously
-		while f and f is not self.rootframe:
-			name = "{0}:{1}:{2}:{3}|".format(id(f.f_code), self.loopcounters[id(f)], f.f_lineno, f.f_lasti) + name
-			f = f.f_back
-		return name
 
-	def incrementLoopCounter(self, numFrameSkip):
-		"""
-		Increment the loop counter associated with the frame that is numFrameSkip
-		frames from the top of the stack
-		"""
-		self.loopcounters[id(sys._getframe(numFrameSkip+1))] += 1
+		# Get list of frames from the root to the current frame
+		f = sys._getframe(numFrameSkip+1)
+		flst = [f]
+		while f and f is not self.rootframe:
+			f = f.f_back
+			flst.insert(0, f)
+
+		# Build up name string, checking loop counters along the way
+		name = ""
+		for i in xrange(len(flst)-1):
+			f = flst[i]
+			name += "{0}:{1}".format(id(f.f_code), f.f_lasti)
+			loopnum = self.loopcounters[name]
+			name += ":{0}|".format(loopnum)
+		# For the last (topmost) frame, also increment the loop counter
+		f = flst[-1]
+		name += "{0}:{1}".format(id(f.f_code), f.f_lasti)
+		loopnum = self.loopcounters[name]
+		self.loopcounters[name] += 1
+		name += ":{0}|".format(loopnum)
+
+		return name
 
 	def lookup(self, name, erp, params, isStructural, conditionedValue=None):
 		"""
@@ -199,11 +209,6 @@ def lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValu
 	else:
 		name = _trace.currentName(numFrameSkip+1)
 		return _trace.lookup(name, erp, params, isStructural, conditionedValue)
-
-def incrementLoopCounter(numFrameSkip):
-	global _trace
-	if _trace:
-		_trace.incrementLoopCounter(numFrameSkip+1)
 
 def newTrace(computation):
 	return RandomExecutionTrace(computation)
