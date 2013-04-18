@@ -123,12 +123,24 @@ if __name__ == "__main__":
 			0.357)
 
 
-	def recursiveStochasticTest():
+	def recursiveStochasticTailTest():
 		def powerLaw(prob, x):
 			if flip(prob, isStructural=True):
 				return x
 			else:
 				return powerLaw(prob, x+1)
+		a = powerLaw(0.3, 1)
+		return a < 5
+	mhtest("recursive stochastic fn, unconditioned (tail recursive)", \
+			recursiveStochasticTailTest, \
+			0.7599)
+
+	def recursiveStochasticTest():
+		def powerLaw(prob, x):
+			if flip(prob, isStructural=True):
+				return x
+			else:
+				return 0 + powerLaw(prob, x+1)
 		a = powerLaw(0.3, 1)
 		return a < 5
 	mhtest("recursive stochastic fn, unconditioned", \
