@@ -1,4 +1,3 @@
-import trace
 
 def ntimes(times, block):
 	"""

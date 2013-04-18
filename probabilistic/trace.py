@@ -92,7 +92,7 @@ class RandomExecutionTrace:
 		# Run the computation, which will create/lookup random variables
 		self.returnValue = self.computation()
 
-		# CLear out the root frame, etc.
+		# Clear out the root frame, etc.
 		self.rootframe = None
 		self.loopcounters.clear()
 
