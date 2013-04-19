@@ -130,8 +130,8 @@ class GammaRandomPrimitive(RandomPrimitive):
 	def _logprob(self, val, params):
 		return gamma_logprob(val, params[0], params[1])
 	
-
 	# TODO: Custom proposal kernel?
+	
 def log_beta(a, b):
 	return log_gamma(a) + log_gamma(b) - log_gamma(a+b)
 

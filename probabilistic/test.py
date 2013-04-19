@@ -23,8 +23,21 @@ def test(name, estimates, trueExpectation, tolerance=errorTolerance):
 
 def mhtest(name, computation, trueExpectation, tolerance=errorTolerance):
 	test(name, repeat(runs, lambda: expectation(computation, traceMH, samples, lag)), trueExpectation, tolerance)
-	# test(name, repeat(runs, lambda: expectation(computation, LARJMH, samples, 10, None, lag)), trueExpectation, tolerance)
 
+def larjtest(name, computation, trueExpectation, tolerance=errorTolerance):
+	test(name, repeat(runs, lambda: expectation(computation, LARJMH, samples, 10, None, lag)), trueExpectation, tolerance)
+
+def eqtest(name, estvalues, truevalues, tolerance=errorTolerance):
+	print "test: {0} ...".format(name),
+	assert(len(estvalues) == len(truevalues))
+	for i in xrange(len(estvalues)):
+		estvalue = estvalues[i]
+		truevalue = truevalues[i]
+		if abs(estvalue - truevalue) > tolerance:
+			print "failed! True value: {0} | Test value: {1}".format(truevalue, estvalue)
+			return
+	else:
+		print "passed."
 
 if __name__ == "__main__":
 
@@ -32,14 +45,113 @@ if __name__ == "__main__":
 
 
 	"""
-	Tests adapted from Church
+	ERP tests
 	"""
 
-
-	test("random, no query", \
+	test("flip sample", \
 		  repeat(runs, lambda: mean(repeat(samples, lambda: flip(0.7)))), \
 		  0.7)
 
+	mhtest("flip query", \
+			lambda: flip(0.7), \
+			0.7)
+
+	test("uniform sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: uniform(0.1, 0.4)))), \
+		  0.5*(.1+.4))
+
+	mhtest("uniform query", \
+			lambda: uniform(.1, .4), \
+			0.5*(.1+.4))
+
+	test("multinomial sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: multinomialDraw([.2,.3,.4], [0.2, 0.6, 0.2])))), \
+		  0.2*.2 + 0.6*.3 + 0.2*.4)
+
+	mhtest("multinomial query", \
+			lambda: multinomialDraw([.2,.3,.4], [0.2, 0.6, 0.2]), \
+			0.2*.2 + 0.6*.3 + 0.2*.4)
+
+	eqtest("multinomial lp", \
+		[multinomial_logprob(0, [0.2, 0.6, 0.2]), \
+		 multinomial_logprob(1, [0.2, 0.6, 0.2]), \
+		 multinomial_logprob(2, [0.2, 0.6, 0.2])], \
+		[math.log(0.2), math.log(0.6), math.log(0.2)])
+
+	test("gaussian sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: gaussian(0.1, 0.5)))), \
+		  0.1)
+
+	mhtest("gaussian query", \
+			lambda: gaussian(0.1, 0.5), \
+			0.1)
+
+	eqtest("gaussian lp", \
+		[gaussian_logprob(0, 0.1, 0.5), \
+		 gaussian_logprob(0.25, 0.1, 0.5), \
+		 gaussian_logprob(0.6, 0.1, 0.5)], \
+		[-0.2457913526447274, -0.27079135264472737, -0.7257913526447274])
+
+	test("gamma sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: gamma(2, 2)/10))), \
+		  0.4)
+
+	mhtest("gamma query", \
+			lambda: gamma(2, 2)/10, \
+			0.4)
+
+	eqtest("gamma lp", \
+		[gamma_logprob(1, 2, 2), \
+		 gamma_logprob(4, 2, 2), \
+		 gamma_logprob(8, 2, 2)], \
+		[-1.8862944092546166, -2.000000048134726, -3.306852867574781])
+
+	test("beta sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: beta(2, 5)))), \
+		  2.0/(2+5))
+
+	mhtest("beta query", \
+			lambda: beta(2, 5), \
+			2.0/(2+5))
+
+	eqtest("beta lp", \
+		[beta_logprob(.1, 2, 5), \
+		 beta_logprob(.2, 2, 5), \
+		 beta_logprob(.6, 2, 5)], \
+		[0.677170196389683, 0.899185234324094, -0.7747911992475776])
+
+	test("binomial sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: binomial(.5, 40)/40.0))), \
+		  0.5)
+
+	mhtest("binomial query", \
+			lambda: binomial(.5, 40)/40.0, \
+			0.5)
+
+	eqtest("binomial lp", \
+		[binomial_logprob(15, .5, 40), \
+		 binomial_logprob(20, .5, 40), \
+		 binomial_logprob(30, .5, 40)], \
+		[-3.3234338674089985, -2.0722579911387817, -7.2840211276953575])
+
+	test("poisson sample", \
+		  repeat(runs, lambda: mean(repeat(samples, lambda: poisson(4)/10.0))), \
+		  0.4)
+
+	mhtest("poisson query", \
+			lambda: poisson(4)/10.0, \
+			0.4)
+
+	eqtest("poisson lp", \
+		[poisson_logprob(2, 4), \
+		 poisson_logprob(5, 4), \
+		 poisson_logprob(7, 4)], \
+		[-1.9205584583201643, -1.8560199371825927, -2.821100833226181])
+
+
+	"""
+	Tests adapted from Church
+	"""
 
 	def flipSetTest():
 		a = 1.0 / 1000
@@ -49,11 +161,6 @@ if __name__ == "__main__":
 			flipSetTest, \
 			1.0/1000, \
 			tolerance=1e-15)
-
-
-	mhtest("unconditioned flip", \
-			lambda: flip(0.7), \
-			0.7)
 
 
 	def andConditionedOnOrTest():
@@ -214,6 +321,16 @@ if __name__ == "__main__":
 			0.417)
 
 
+	def transDimensionalTest():
+		a = beta(1, 5) if flip(0.9, isStructural=True) else 0.7
+		b = flip(a)
+		condition(b)
+		return a
+	larjtest("trans-dimensional (LARJ)", \
+			  transDimensionalTest, \
+			  0.417)
+
+
 	def memFlipInIfTest():
 		a = mem(flip) if flip() else mem(flip)
 		b = a()
@@ -292,9 +409,9 @@ if __name__ == "__main__":
 
 	def nativeLoopTest():
 		accum  = 0
-		for i in xrange(10):
+		for i in xrange(4):
 			accum += flip()
-		return accum / 10.0
+		return accum / 4.0
 	mhtest("native for loop", \
 			nativeLoopTest, \
 			0.5)
@@ -303,8 +420,8 @@ if __name__ == "__main__":
 		accum = [0]
 		def block(i):
 			accum[0] += flip()
-		ntimes(10, block)
-		return accum[0] / 10.0
+		ntimes(4, block)
+		return accum[0] / 4.0
 	mhtest("ntimes control structure", \
 			ntimesTest, \
 			0.5)
@@ -314,8 +431,8 @@ if __name__ == "__main__":
 		accum = [0]
 		def block(elem):
 			accum[0] += flip()
-		foreach(xrange(10), block)
-		return accum[0] / 10.0
+		foreach(xrange(4), block)
+		return accum[0] / 4.0
 	mhtest("foreach control structure", \
 			foreachTest, \
 			0.5)
@@ -327,22 +444,22 @@ if __name__ == "__main__":
 		def block():
 			i[0] += 1
 			accum[0] += flip()
-		until(lambda: i[0] == 10, block)
-		return accum[0] / 10.0
+		until(lambda: i[0] == 4, block)
+		return accum[0] / 4.0
 	mhtest("until control structure", \
 			untilTest, \
 			0.5)
 
 
 	def mapTest():
-		return sum(map(lambda x: flip(), range(10))) / 10.0
+		return sum(map(lambda x: flip(), range(4))) / 4.0
 	mhtest("map control structure", \
 			mapTest, \
 			0.5)
 
 
 	def repeatTest():
-		return sum(repeat(10, flip)) / 10.0
+		return sum(repeat(4, flip)) / 4.0
 	mhtest("repeat control structure", \
 			repeatTest, \
 			0.5)
