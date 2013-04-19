@@ -397,7 +397,7 @@ if __name__ == "__main__":
 
 
 	"""
-	Tests for things specific to Python version
+	Tests for things specific to new implementation
 	"""
 
 
