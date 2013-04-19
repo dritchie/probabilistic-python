@@ -36,8 +36,7 @@ def eqtest(name, estvalues, truevalues, tolerance=errorTolerance):
 		if abs(estvalue - truevalue) > tolerance:
 			print "failed! True value: {0} | Test value: {1}".format(truevalue, estvalue)
 			return
-	else:
-		print "passed."
+	print "passed."
 
 if __name__ == "__main__":
 
