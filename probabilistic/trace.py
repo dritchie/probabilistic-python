@@ -133,10 +133,10 @@ class RandomExecutionTrace:
 
 		# Get list of frames from the root to the current frame
 		f = sys._getframe(numFrameSkip+1)
-		flst = [f]
+		flst = []
 		while f and f is not self.rootframe:
-			f = f.f_back
 			flst.insert(0, f)
+			f = f.f_back
 
 		# Build up name string, checking loop counters along the way
 		name = ""

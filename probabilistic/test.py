@@ -320,8 +320,13 @@ if __name__ == "__main__":
 			0.417)
 
 
+	def transDimensionalLARJTest():
+			a = beta(1, 5) if flip(0.9, isStructural=True) else 0.7
+			b = flip(a)
+			condition(b)
+			return a
 	larjtest("trans-dimensional (LARJ)", \
-			  transDimensionalTest, \
+			  transDimensionalLARJTest, \
 			  0.417)
 
 

@@ -239,6 +239,7 @@ class LARJKernel:
 			newStructTrace = lerpTrace.trace2
 
 		# Finalize accept/reject decision
+		var = newStructTrace.getRecord(name)
 		rvsPropLP = var.erp._logProposalProb(propval, origval, var.params) + oldStructTrace.lpDiff(newStructTrace) - math.log(newNumVars)
 		acceptanceProb = newStructTrace.logprob - currTrace.logprob + rvsPropLP - fwdPropLP + annealingLpRatio
 		if newStructTrace.conditionsSatisfied and math.log(random.random()) < acceptanceProb:
