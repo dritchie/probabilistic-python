@@ -415,54 +415,6 @@ if __name__ == "__main__":
 			nativeLoopTest, \
 			0.5)
 
-	def ntimesTest():
-		accum = [0]
-		def block(i):
-			accum[0] += flip()
-		ntimes(4, block)
-		return accum[0] / 4.0
-	mhtest("ntimes control structure", \
-			ntimesTest, \
-			0.5)
-
-
-	def foreachTest():
-		accum = [0]
-		def block(elem):
-			accum[0] += flip()
-		foreach(xrange(4), block)
-		return accum[0] / 4.0
-	mhtest("foreach control structure", \
-			foreachTest, \
-			0.5)
-
-
-	def untilTest():
-		accum = [0]
-		i = [0]
-		def block():
-			i[0] += 1
-			accum[0] += flip()
-		until(lambda: i[0] == 4, block)
-		return accum[0] / 4.0
-	mhtest("until control structure", \
-			untilTest, \
-			0.5)
-
-
-	def mapTest():
-		return sum(map(lambda x: flip(), range(4))) / 4.0
-	mhtest("map control structure", \
-			mapTest, \
-			0.5)
-
-
-	def repeatTest():
-		return sum(repeat(4, flip)) / 4.0
-	mhtest("repeat control structure", \
-			repeatTest, \
-			0.5)
-
 
 	def directConditionTest():
 		accum = [0]
