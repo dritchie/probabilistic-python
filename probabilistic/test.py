@@ -5,6 +5,8 @@ from trace import *
 from erp import *
 from memoize import *
 
+from datetime import datetime
+
 samples = 150
 lag = 20
 runs = 5
@@ -39,6 +41,8 @@ def eqtest(name, estvalues, truevalues, tolerance=errorTolerance):
 	print "passed."
 
 if __name__ == "__main__":
+
+	d1 = datetime.now()
 
 	print "starting tests..."
 
@@ -338,68 +342,6 @@ if __name__ == "__main__":
 			memFlipInIfTest, \
 			0.5)
 
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define bb (make-dirichlet-discrete (list 0.5 0.5 0.5)))
-#                                 (= (bb) (bb))
-#                                 true )))
-#             (lambda (b) (if b 1 0))
-#             (/ (+ 1 0.5) (+ 1 (* 3 0.5)))
-#             error-tolerance
-#             "symmetric dirichlet-discrete, unconditioned." )
-
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define bb (make-dirichlet-discrete (list 0.5 0.5)))
-#                                 (= 0 (bb))
-#                                 (= 0 (bb)) )))
-#             (lambda (b) (if b 1 0))
-#             (/ (+ 1 0.5) (+ 1 (* 2 0.5)))
-#             error-tolerance
-#             "symmetric dirichlet-discrete, conditioned." )
-
-# (define crp-param 0.5)
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define draw-type (make-CRP crp-param));(CRPmem 1.0 gensym))
-#                                 (define class (mem (lambda (x) (draw-type))))
-#                                 (eq? (class 'bob) (class 'mary))
-#                                 (eq? (class 'bob) (class 'jim)))))
-#             (lambda (x) (if x 1 0))
-#             (/ 2.0 (+ 2.0 crp-param))
-#             error-tolerance
-#             "CRP third customer at first table, conditioned on second customer at first table." )
-
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define draw-type (DPmem 1.0 gensym))
-#                                 (define class (mem (lambda (x) (draw-type))))
-#                                 (eq? (class 'bob) (class 'mary))
-#                                 true)))
-#             (lambda (x) (if x 1 0))
-#             0.5
-#             error-tolerance
-#             "DPmem of gensym, unconditioned." )
-
-# (define dirichlet-param 0.01)
-# (define CRP-param 1.0)
-# (check-test (repeat runs
-#                     (lambda ()
-#                       (mh-query samples lag
-#                                 (define draw-type (make-CRP CRP-param))
-#                                 (define obs (mem (lambda (type) (make-symmetric-dirichlet-discrete 3 dirichlet-param))))
-#                                 (= (sample (obs (draw-type))) (sample (obs (draw-type))))
-#                                 true)))
-#             (lambda (x) (if x 1 0))
-#             (+ (* (/ 1 (+ 1 CRP-param))  (/ (+ 1 dirichlet-param) (+ 1 (* 3 dirichlet-param))))   ;same crp table, same dirichlet draws
-#                (* (/ CRP-param (+ 1 CRP-param))   (/ 1 3))) ;different crp tables, same dirichlet draws...
-#             error-tolerance
-#             "varying numbers of xrps inside mem." )
-
 
 	"""
 	Tests for things specific to new implementation
@@ -431,4 +373,7 @@ if __name__ == "__main__":
 
 
 	print "tests done!"
+
+	d2 = datetime.now()
+	print "time: {0}".format((d2 - d1).total_seconds())
 
