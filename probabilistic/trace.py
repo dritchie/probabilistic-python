@@ -171,6 +171,7 @@ class RandomExecutionTrace:
 		"""
 
 		record = None
+		name = None
 		# Try to find the variable (first check the flat list, then do
 		# slower structural name lookup)
 		varIsInFlatList = self.currVarIndex < len(self.varlist)

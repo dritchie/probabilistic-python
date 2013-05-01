@@ -88,7 +88,7 @@ class RandomWalkKernel:
 		# and generate another sample (this may not actually be deterministic,
 		# in the case of nested query)
 		if name == None:
-			currTrace.traceUpdate()
+			currTrace.traceUpdate(not structural)
 			return currTrace
 		# Otherwise, make a proposal for a randomly-chosen variable, probabilistically
 		# accept it
