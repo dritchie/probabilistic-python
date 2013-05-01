@@ -8,7 +8,8 @@ class RandomVariableRecord:
 	These form the 'choice points' in a probabilistic program trace.
 	"""
 
-	def __init__(self, erp, params, val, logprob, structural, conditioned=False):
+	def __init__(self, name, erp, params, val, logprob, structural, conditioned=False):
+		self.name = name
 		self.erp = erp
 		self.params = params
 		self.val = val
@@ -26,6 +27,8 @@ class RandomExecutionTrace:
 	def __init__(self, computation, doRejectionInit=True):
 		self.computation = computation
 		self._vars = {}
+		self.varlist = []
+		self.currVarIndex = 0
 		self.logprob = 0
 		self.newlogprob = 0		# From newly-added variables
 		self.oldlogprob = 0		# From unreachable variables
@@ -43,7 +46,8 @@ class RandomExecutionTrace:
 		newdb.logprob = self.logprob
 		newdb.oldlogprob = self.oldlogprob
 		newdb.newlogprob = self.newlogprob
-		newdb._vars = {name:copy.copy(record) for name,record in self._vars.iteritems()}
+		newdb.varlist = [copy.copy(record) for record in self.varlist]
+		newdb._vars = {record.name:record for record in newdb.varlist}
 		newdb.conditionsSatisfied = self.conditionsSatisfied
 		newdb.returnValue = self.returnValue
 		return newdb
@@ -67,7 +71,7 @@ class RandomExecutionTrace:
 		"""
 		return sum(map(lambda name: self._vars[name].logprob, self.varDiff(other)))
 
-	def traceUpdate(self):
+	def traceUpdate(self, structureIsFixed=False):
 		"""
 		Run computation and update this trace accordingly
 		"""
@@ -80,6 +84,12 @@ class RandomExecutionTrace:
 		self.newlogprob = 0.0
 		self.loopcounters.clear()
 		self.conditionsSatisfied = True
+		self.currVarIndex = 0
+
+		# If updating this trace can change the variable structure, then we
+		# clear out the flat list of variables beforehand
+		if not structureIsFixed:
+			self.varlist = []
 
 		# First, mark all random values as 'inactive'; only
 		# those reeached by the computation will become 'active'
@@ -105,7 +115,7 @@ class RandomExecutionTrace:
 
 		_trace = originalTrace
 
-	def proposeChange(self, varname):
+	def proposeChange(self, varname, structureIsFixed=False):
 		"""
 		Propose a random change to the variable name 'varname'
 		Returns a new sample trace from the computation and the
@@ -118,7 +128,7 @@ class RandomExecutionTrace:
 		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
 		var.val = propval
 		var.logprob = var.erp._logprob(var.val, var.params)
-		nextTrace.traceUpdate()
+		nextTrace.traceUpdate(structureIsFixed)
 		fwdPropLP += nextTrace.newlogprob
 		rvsPropLP += nextTrace.oldlogprob
 		return nextTrace, fwdPropLP, rvsPropLP
@@ -154,27 +164,48 @@ class RandomExecutionTrace:
 
 		return name
 
-	def lookup(self, name, erp, params, isStructural, conditionedValue=None):
+	def lookup(self, erp, params, numFrameSkip, isStructural, conditionedValue=None):
 		"""
 		Looks up the value of a random variable.
 		If this random variable does not exist, create it
 		"""
 
-		record = self._vars.get(name)
-		if (not record or record.erp is not erp or
-			isStructural != record.structural or
-			(conditionedValue and conditionedValue != record.val)):
-			# Create new variable
+		record = None
+		# Try to find the variable (first check the flat list, then do
+		# slower structural name lookup)
+		varIsInFlatList = self.currVarIndex < len(self.varlist)
+		if varIsInFlatList:
+			record = self.varlist[self.currVarIndex]
+		else:
+			name = self.currentName(numFrameSkip+1)
+			record = self._vars.get(name)
+			if (not record or record.erp is not erp or isStructural != record.structural):
+				record = None
+		# If we didn't find the variable, create a new one
+		if not record:
 			val = (conditionedValue if conditionedValue else erp._sample_impl(params))
 			ll = erp._logprob(val, params)
 			self.newlogprob += ll
-			record = RandomVariableRecord(erp, params, val, ll, isStructural, conditionedValue != None)
+			record = RandomVariableRecord(name, erp, params, val, ll, isStructural, conditionedValue != None)
 			self._vars[name] = record
+		# Otherwise, reuse the variable we found, but check if its parameters/conditioning
+		# status have changed
 		else:
-			# Reuse existing variable
+			hasChanges = False
 			if record.params != params:
 				record.params = params
-				record.logprob = erp._logprob(record.val, params)
+				hasChanges = True
+			if conditionedValue and conditionedValue != record.val:
+				record.val = conditionedValue
+				record.conditioned = True
+				hasChanges = True
+			if hasChanges:
+				record.logprob = erp._logprob(record.val, record.params)
+
+		# Finish up and return
+		if not varIsInFlatList:
+			self.varlist.append(record)
+		self.currVarIndex += 1
 		self.logprob += record.logprob
 		record.active = True
 		return record.val
@@ -207,8 +238,7 @@ def lookupVariableValue(erp, params, isStructural, numFrameSkip, conditionedValu
 	if not _trace:
 		return (conditionedValue if conditionedValue else erp._sample_impl(params))
 	else:
-		name = _trace.currentName(numFrameSkip+1)
-		return _trace.lookup(name, erp, params, isStructural, conditionedValue)
+		return _trace.lookup(erp, params, numFrameSkip+1, isStructural, conditionedValue)
 
 def newTrace(computation):
 	return RandomExecutionTrace(computation)
