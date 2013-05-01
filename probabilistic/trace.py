@@ -191,6 +191,7 @@ class RandomExecutionTrace:
 		# Otherwise, reuse the variable we found, but check if its parameters/conditioning
 		# status have changed
 		else:
+			record.conditioned = (conditionedValue != None)
 			hasChanges = False
 			if record.params != params:
 				record.params = params
