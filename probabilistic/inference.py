@@ -276,9 +276,12 @@ def mcmc(computation, kernel, numsamps, lag=1, verbose=False):
 	while i < iters:
 		currentTrace = kernel.next(currentTrace)
 		if i % lag == 0:
+			if verbose:
+				print "iteration {0}\r".format(i),
 			samps.append((currentTrace.returnValue, currentTrace.logprob))
 		i += 1
 	if verbose:
+		print ""
 		kernel.stats()
 	return samps
 
