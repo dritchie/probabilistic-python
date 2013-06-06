@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
 	def memRandomArgTest():
 		proc = mem(lambda x: flip(0.8))
-		return all([proc(uniformDraw([1,2,3])), proc(uniformDraw([1,2,3]))])
+		return all([proc(uniformDraw([1,2,3], isStructural=True)), proc(uniformDraw([1,2,3], isStructural=True))])
 	mhtest("memoized flip with random argument, unconditioned", \
 			memRandomArgTest, \
 			0.6933333333333334)
