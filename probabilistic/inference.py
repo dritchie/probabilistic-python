@@ -216,8 +216,8 @@ class LARJKernel:
 		var.val = propval
 		var.logprob = var.erp._logprob(var.val, var.params)
 		newStructTrace.traceUpdate()
-		oldNumVars = len(oldStructTrace.freeVarNames())
-		newNumVars = len(newStructTrace.freeVarNames())
+		oldNumVars = len(oldStructTrace.freeVarNames(nonstructural=False))
+		newNumVars = len(newStructTrace.freeVarNames(nonstructural=False))
 		fwdPropLP += newStructTrace.newlogprob - math.log(oldNumVars)
 
 		# We only actually do annealing if we have any non-structural variables and we're doing more than
