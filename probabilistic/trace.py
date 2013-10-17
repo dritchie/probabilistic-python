@@ -115,7 +115,7 @@ class RandomExecutionTrace:
 
 		_trace = originalTrace
 
-	def proposeChange(self, varname, structureIsFixed=False):
+	def proposeChange(self, varname):
 		"""
 		Propose a random change to the variable name 'varname'
 		Returns a new sample trace from the computation and the
@@ -128,7 +128,7 @@ class RandomExecutionTrace:
 		rvsPropLP = var.erp._logProposalProb(propval, var.val, var.params)
 		var.val = propval
 		var.logprob = var.erp._logprob(var.val, var.params)
-		nextTrace.traceUpdate(structureIsFixed)
+		nextTrace.traceUpdate(not var.structural)
 		fwdPropLP += nextTrace.newlogprob
 		rvsPropLP += nextTrace.oldlogprob
 		return nextTrace, fwdPropLP, rvsPropLP

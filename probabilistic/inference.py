@@ -93,7 +93,7 @@ class RandomWalkKernel:
 		# Otherwise, make a proposal for a randomly-chosen variable, probabilistically
 		# accept it
 		else:
-			nextTrace, fwdPropLP, rvsPropLP = currTrace.proposeChange(name, not self.structural)
+			nextTrace, fwdPropLP, rvsPropLP = currTrace.proposeChange(name)
 			fwdPropLP -= math.log(len(currTrace.freeVarNames(self.structural, self.nonstructural)))
 			rvsPropLP -= math.log(len(nextTrace.freeVarNames(self.structural, self.nonstructural)))
 			acceptThresh = nextTrace.logprob - currTrace.logprob + rvsPropLP - fwdPropLP
@@ -134,7 +134,7 @@ class LARJInterpolationTrace(object):
 		return list(set(self.trace1.freeVarNames(structural, nonstructural) + \
 						self.trace2.freeVarNames(structural, nonstructural)))
 
-	def proposeChange(self, varname, structureIsFixed=False):
+	def proposeChange(self, varname):
 		assert(structureIsFixed)
 		var1 = self.trace1.getRecord(varname)
 		var2 = self.trace2.getRecord(varname)
@@ -151,11 +151,11 @@ class LARJInterpolationTrace(object):
 		if var1:
 			var1.val = propval
 			var1.logprob = var1.erp._logprob(var1.val, var1.params)
-			nextTrace.trace1.traceUpdate(structureIsFixed)
+			nextTrace.trace1.traceUpdate(not var1.structural)
 		if var2:
 			var2.val = propval
 			var2.logprob = var2.erp._logprob(var2.val, var2.params)
-			nextTrace.trace2.traceUpdate(structureIsFixed)
+			nextTrace.trace2.traceUpdate(not var2.structural)
 		return nextTrace, fwdPropLP, rvsPropLP
 
 
