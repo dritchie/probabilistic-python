@@ -181,7 +181,7 @@ def binomial_sample(p, n):
 		u = random.random()
 		if u < p:
 			k += 1
-	return k
+	return int(k)
 
 def g(x):
 	if x == 0:
@@ -235,7 +235,7 @@ def poisson_sample(mu):
 		m = 7.0/8*mu
 		x = random.gammavariate(m, 1)
 		if x > mu:
-			return k + binomial_sample(mu/x, m-1)
+			return int(k + binomial_sample(mu/x, int(m-1)))
 		else:
 			mu -= x
 			k += m
@@ -244,7 +244,7 @@ def poisson_sample(mu):
 	while p > emu:
 		p *= random.random()
 		k += 1
-	return k-1
+	return int(k-1)
 
 def fact(x):
 	t = 1
