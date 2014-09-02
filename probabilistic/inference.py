@@ -135,7 +135,6 @@ class LARJInterpolationTrace(object):
 						self.trace2.freeVarNames(structural, nonstructural)))
 
 	def proposeChange(self, varname):
-		assert(structureIsFixed)
 		var1 = self.trace1.getRecord(varname)
 		var2 = self.trace2.getRecord(varname)
 		nextTrace = LARJInterpolationTrace(copy.deepcopy(self.trace1) if var1 else self.trace1, \
